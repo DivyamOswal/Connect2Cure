@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer"
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import FeaturesPage from "./components/Features/FeaturePage";
 
 const App = () => {
   const location = useLocation();
@@ -20,6 +21,7 @@ const App = () => {
       <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/features" element={<FeaturesPage />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </Suspense>

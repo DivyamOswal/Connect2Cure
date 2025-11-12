@@ -126,7 +126,7 @@ const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 sm:px-6 md:px-10 lg:px-20 xl:px-32 transition-all duration-500 z-50 ${
         isScrolled
-          ? "bg-white/30 backdrop-blur-md text-gray-800 shadow-sm py-2 sm:py-3"
+          ? "bg-white/30 backdrop-blur-md text-gray-800 shadow-sm py-2"
           : "bg-[#FF8040] py-3 sm:py-4"
       }`}
       role="navigation"
