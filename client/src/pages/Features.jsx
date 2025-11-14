@@ -3,8 +3,8 @@ import FeaturesPage from '../components/Features/FeaturePage'
 
 const Features = () => {
      useEffect(()=>{
-      window.scrollTo({top:0, behavior:"smooth"})
-    },[])
+           window.scrollTo({top:0, behavior:"smooth"})
+         },[])
   return (
     <div>
         <FeaturesPage/>

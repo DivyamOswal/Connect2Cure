@@ -7,6 +7,7 @@ import Footer from "./components/Footer"
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import FeaturesPage from "./components/Features/FeaturePage";
+import DoctorDetail from "./components/Home/DoctorsDetailsPage";
 
 const App = () => {
   const location = useLocation();
@@ -23,6 +24,8 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/doctor/:id" element={<DoctorDetail />} />
+
         </Routes>
       </Suspense>
 

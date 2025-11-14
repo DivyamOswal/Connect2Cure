@@ -1,5 +1,5 @@
 import React from "react";
-import heroImg from "../../assets/Home/images/hero_img.avif";
+import heroImg from "../../assets/Home/hero_img.avif";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 

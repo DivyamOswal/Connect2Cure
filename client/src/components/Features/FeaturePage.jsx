@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Title from "../Title";
 import featuresData from "../../assets/Features/features";
 
 const FeaturesPage = () => {
+  useEffect(()=>{
+        window.scrollTo({top:0, behavior:"smooth"})
+      },[])
   return (
     <div className="bg-[#E6E6E6] px-6 py-5 md:px-16 lg:px-24 xl:px-32 overflow-hidden">
       <Title

@@ -199,7 +199,7 @@ const Navbar = () => {
           <>
             <button
               className={`px-4 py-2 rounded-md font-semibold text-sm transition-all hover:cursor-pointer ${
-                isScrolled ? "bg-[#FF8040] text-white hover:bg-[#004494]" : "bg-gray-800 text-white hover:bg-black"
+                isScrolled ? "bg-[#FF8040] text-white hover:bg-black" : "bg-gray-800 text-white hover:bg-black"
               }`}
               onClick={() => navigate("/login")}
               aria-label="Login or Signup"
@@ -307,7 +307,7 @@ const Navbar = () => {
           <Link
             key={i}
             to={link.path}
-            className="hover:text-[#0056B3] text-base sm:text-lg"
+            className="hover:text-[#FF8040] text-base sm:text-lg"
             onClick={() => setIsMenuOpen(false)}
             ref={i === 0 ? firstMenuLinkRef : undefined}
           >
@@ -318,7 +318,7 @@ const Navbar = () => {
         {/* Mobile/Tablet Login Button (when guest) */}
         {!user && (
           <button
-            className="bg-[#0056B3] text-white rounded-md mt-4 px-4 py-2 text-sm sm:text-base"
+            className="bg-[#FF8040] text-white rounded-md mt-4 px-4 py-2 text-sm sm:text-base"
             onClick={() => {
               setIsMenuOpen(false);
               navigate("/login");
