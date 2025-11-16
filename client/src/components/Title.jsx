@@ -10,7 +10,7 @@ const Title = ({ title, subtitle }) => {
         <p
           className="
             text-gray-700 mt-2 font-medium
-            text-sm sm:text-base md:text-lg
+            text-sm sm:text-base md:text-sm
           "
         >
           {subtitle}

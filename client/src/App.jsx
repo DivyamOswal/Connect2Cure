@@ -7,7 +7,9 @@ import Footer from "./components/Footer"
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import FeaturesPage from "./components/Features/FeaturePage";
-import DoctorDetail from "./components/Home/DoctorsDetailsPage";
+import DoctorDetail from "./components/DoctorsDetailsPage";
+import Doctors from "./pages/Doctors";
+import About from "./pages/About";
 
 const App = () => {
   const location = useLocation();
@@ -22,7 +24,9 @@ const App = () => {
       <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/doctors" element={<Doctors />} />
           <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/doctor/:id" element={<DoctorDetail />} />
 

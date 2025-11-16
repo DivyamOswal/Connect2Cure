@@ -1,7 +1,6 @@
-// src/pages/DoctorDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
-import doctorData from "../../assets/Home/Doctors/doctorData";
+import doctorData from "../assets/Doctors/doctorData"
 
 const BookingModal = ({ doctor, onClose }) => {
   const [form, setForm] = useState({ name: "", phone: "", date: "", time: "" });
@@ -137,7 +136,7 @@ const DoctorDetail = () => {
           onClick={() =>
             window.history.length > 2 ? navigate(-1) : navigate("/")
           }
-          className="text-black text-sm mb-4 hover:bg-[#0361C5]/10 p-2 rounded transition"
+          className="text-black text-sm mb-4 hover:bg-[#FF8040]/10 p-2 rounded transition"
         >
           ← Back to {backLabel}
         </button>
@@ -146,7 +145,7 @@ const DoctorDetail = () => {
           <img
             src={doctor.image}
             alt={doctor.name}
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-[70vh] object-cover rounded-lg"
           />
 
           <div className="flex flex-col justify-between">

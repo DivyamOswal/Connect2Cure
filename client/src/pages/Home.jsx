@@ -6,6 +6,7 @@ import AboutSystem from '../components/Home/AboutSytem'
 import Dashboard from '../components/Home/Dashboard'
 import Benefits from '../components/Home/Benefits'
 import Doctors from '../components/Home/Doctors'
+import GetStarted from '../components/Home/getStarted'
 
 const Home = () => {
    useEffect(()=>{
@@ -20,6 +21,7 @@ const Home = () => {
         <AboutSystem/>
         <Dashboard/>
         <Benefits/>
+        <GetStarted/>
     </div>
   )
 }
