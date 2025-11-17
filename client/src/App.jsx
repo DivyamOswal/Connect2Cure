@@ -10,6 +10,8 @@ import FeaturesPage from "./components/Features/FeaturePage";
 import DoctorDetail from "./components/DoctorsDetailsPage";
 import Doctors from "./pages/Doctors";
 import About from "./pages/About";
+import Contact from "./pages/Contact";
+import FAQ from "./pages/FAQ";
 
 const App = () => {
   const location = useLocation();
@@ -27,6 +29,8 @@ const App = () => {
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact/>} />
+          <Route path="/faq" element={<FAQ/>} />
           <Route path="/login" element={<Login />} />
           <Route path="/doctor/:id" element={<DoctorDetail />} />
 
