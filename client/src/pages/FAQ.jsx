@@ -22,7 +22,7 @@ const FAQ = () => {
               onClick={() => toggleFAQ(index)}
               className={`
                 rounded-lg shadow p-4 cursor-pointer transition-all
-                ${activeIndex === index ? "bg-[#f4e1d6] border-2 border-dotted border-[#FF8040] " : "bg-white"}
+                ${activeIndex === index ? "bg-[#f4e1d6] border border-dotted border-[#FF8040] " : "bg-white"}
               `}
             >
               {/* Question Row */}

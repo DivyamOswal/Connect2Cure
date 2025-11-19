@@ -12,6 +12,8 @@ import Doctors from "./pages/Doctors";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
+import HelpCenter from "./pages/HelpCenter";
+import TermsPrivacy from "./pages/TermsPrivacy";
 
 const App = () => {
   const location = useLocation();
@@ -32,6 +34,8 @@ const App = () => {
           <Route path="/contact" element={<Contact/>} />
           <Route path="/faq" element={<FAQ/>} />
           <Route path="/login" element={<Login />} />
+          <Route path="/helpcenter" element={<HelpCenter />} />
+          <Route path="/terms&privacy" element={<TermsPrivacy />} />
           <Route path="/doctor/:id" element={<DoctorDetail />} />
 
         </Routes>
