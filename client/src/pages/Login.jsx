@@ -1,52 +1,262 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 
 const Login = () => {
-     const [state, setState] = useState("login")
+  const location = useLocation();
 
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: ''
-    })
+  // Detect role based on URL
+  // /login/patient -> "patient"
+  // /login/doctor  -> "doctor"
+  const path = location.pathname.toLowerCase();
+  const initialRole = path.includes("doctor") ? "doctor" : "patient";
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
+  const [state, setState] = useState("login"); // "login" | "register"
+  const [role, setRole] = useState(initialRole); // patient | doctor
 
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Handle input change
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Submit form
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      // -------------------------------
+      // LOGIN FLOW
+      // -------------------------------
+      if (state === "login") {
+        const res = await fetch("http://localhost:5000/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            role, // important: backend validates role
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Login failed");
+
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // redirect to onboarding if incomplete
+        if (!data.user.onboardingCompleted) {
+          if (data.user.role === "patient") {
+            window.location.href = "/onboarding/patient";
+          } else if (data.user.role === "doctor") {
+            window.location.href = "/onboarding/doctor";
+          }
+          return;
+        }
+
+        // redirect to dashboards after onboarding
+        if (data.user.role === "doctor") {
+          window.location.href = "/dashboard/doctor";
+        } else {
+          window.location.href = "/patient-dashboard";
+        }
+
+        return;
+      }
+
+      // -------------------------------
+      // REGISTER FLOW
+      // -------------------------------
+      const registerRes = await fetch(
+        "http://localhost:5000/api/auth/register",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            role, // store role on register
+          }),
+        }
+      );
+
+      const regData = await registerRes.json();
+      if (!registerRes.ok)
+        throw new Error(regData.message || "Registration failed");
+
+      // Auto-login after register
+      const loginRes = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          role,
+        }),
+      });
+
+      const loginData = await loginRes.json();
+      if (!loginRes.ok)
+        throw new Error(loginData.message || "Auto login failed");
+
+      localStorage.setItem("accessToken", loginData.accessToken);
+      localStorage.setItem("refreshToken", loginData.refreshToken);
+      localStorage.setItem("user", JSON.stringify(loginData.user));
+
+      // redirect to onboarding
+      if (loginData.user.role === "patient") {
+        window.location.href = "/onboarding/patient";
+      } else {
+        window.location.href = "/onboarding/doctor";
+      }
+    } catch (err) {
+      console.error("AUTH ERROR:", err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target
-        setFormData(prev => ({ ...prev, [name]: value }))
-    }
+  // Toggle login/signup
+  const toggleState = () => {
+    setState((prev) => (prev === "login" ? "register" : "login"));
+    setError("");
+  };
+
   return (
-   <div className='flex justify-center items-center h-screen'>
-     <form onSubmit={handleSubmit} className="sm:w-[350px] w-full text-center border border-gray-300/60 rounded-2xl px-8 bg-white">
-                <h1 className="text-gray-900 text-3xl mt-10 font-medium">{state === "login" ? "Login" : "Sign up"}</h1>
-                <p className="text-gray-500 text-sm mt-2">Please sign in to continue</p>
-                {state !== "login" && (
-                    <div className="flex items-center mt-6 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user-round-icon lucide-user-round"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>
-                        <input type="text" name="name" placeholder="Name" className="border-none outline-none ring-0" value={formData.name} onChange={handleChange} required />
-                    </div>
-                )}
-                <div className="flex items-center w-full mt-4 bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg>
-                    <input type="email" name="email" placeholder="Email id" className="border-none outline-none ring-0" value={formData.email} onChange={handleChange} required />
-                </div>
-                <div className="flex items-center mt-4 w-full bg-white border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6 gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-lock-icon lucide-lock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                    <input type="password" name="password" placeholder="Password" className="border-none outline-none ring-0" value={formData.password} onChange={handleChange} required />
-                </div>
-                <div className="mt-4 text-left text-[#FF8040]">
-                    <button className="text-sm" type="reset">Forget password?</button>
-                </div>
-                <button type="submit" className="mt-2 w-full h-11 rounded-full text-white bg-[#FF8040] hover:opacity-90 transition-opacity">
-                    {state === "login" ? "Login" : "Sign up"}
-                </button>
-                <p onClick={() => setState(prev => prev === "login" ? "register" : "login")} className="text-gray-500 text-sm mt-3 mb-11">{state === "login" ? "Don't have an account?" : "Already have an account?"} <a href="#" className="text-[#FF8040] hover:underline">click here</a></p>
-            </form>
-   </div>
-  )
-}
+    <div className="flex justify-center items-center h-screen bg-gray-50">
+      <form
+        onSubmit={handleSubmit}
+        className="sm:w-[350px] w-full text-center border border-gray-300/60 rounded-2xl px-8 bg-white shadow-lg"
+      >
+        <h1 className="text-gray-900 text-3xl mt-10 font-medium">
+          {state === "login"
+            ? `Login as ${role === "doctor" ? "Doctor" : "Patient"}`
+            : `Sign up as ${role === "doctor" ? "Doctor" : "Patient"}`}
+        </h1>
 
-export default Login
+        <p className="text-gray-500 text-sm mt-2">
+          {state === "login" ? "Welcome back!" : "Create your account"}
+        </p>
+
+        {/* Error message */}
+        {error && (
+          <p className="mt-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg py-2">
+            {error}
+          </p>
+        )}
+
+        {/* Role Selector */}
+        <div className="flex justify-center gap-2 mt-4">
+          <button
+            type="button"
+            onClick={() => setRole("patient")}
+            className={`px-3 py-1 rounded-full text-sm border ${
+              role === "patient"
+                ? "bg-[#FF8040] text-white border-[#FF8040]"
+                : "bg-white text-gray-700 border-gray-300"
+            }`}
+          >
+            Patient
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("doctor")}
+            className={`px-3 py-1 rounded-full text-sm border ${
+              role === "doctor"
+                ? "bg-[#FF8040] text-white border-[#FF8040]"
+                : "bg-white text-gray-700 border-gray-300"
+            }`}
+          >
+            Doctor
+          </button>
+        </div>
+
+        {/* Name field (only for signup) */}
+        {state !== "login" && (
+          <div className="flex items-center mt-6 w-full border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6">
+            <input
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              className="border-none outline-none ring-0 text-sm w-full"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        )}
+
+        {/* Email */}
+        <div className="flex items-center w-full mt-4 border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6">
+          <input
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            className="border-none outline-none ring-0 text-sm w-full"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        {/* Password */}
+        <div className="flex items-center mt-4 w-full border border-gray-300/80 h-12 rounded-full overflow-hidden pl-6">
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            className="border-none outline-none ring-0 text-sm w-full"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-5 mb-3 w-full h-11 rounded-full text-white bg-[#FF8040] hover:opacity-90 transition-opacity disabled:opacity-60"
+        >
+          {loading
+            ? state === "login"
+              ? "Logging in..."
+              : "Signing up..."
+            : state === "login"
+            ? "Login"
+            : "Sign Up"}
+        </button>
+
+        {/* Switch login <-> signup */}
+        <p className="text-gray-500 text-sm mb-11">
+          {state === "login"
+            ? "Don't have an account?"
+            : "Already have an account?"}{" "}
+          <button
+            type="button"
+            onClick={toggleState}
+            className="text-[#FF8040] hover:underline font-medium"
+          >
+            Click here
+          </button>
+        </p>
+      </form>
+    </div>
+  );
+};
+
+export default Login;
