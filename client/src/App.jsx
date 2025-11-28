@@ -3,7 +3,8 @@ import React, { Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer"
+import Footer from "./components/Footer";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import FeaturesPage from "./components/Features/FeaturePage";
@@ -15,29 +16,56 @@ import FAQ from "./pages/FAQ";
 import HelpCenter from "./pages/HelpCenter";
 import TermsPrivacy from "./pages/TermsPrivacy";
 
+// Dashboards
+import DoctorLayout from "./pages/DoctorLayout";
+import DoctorDashboard from "./pages/DoctorDashboard";
+import PatientDashboard from "./pages/PatientDashboard";
+import Appointments from "./components/Dashboard/Doctor/Appointments";
+import Patients from "./components/Dashboard/Doctor/Patients";
+import Reports from "./components/Dashboard/Doctor/Reports";
+import Messages from "./components/Dashboard/Doctor/Messages";
+
 const App = () => {
   const location = useLocation();
+  const path = location.pathname;
 
-  const hideNavbar = location.pathname === "/login";
-  const hideFooter = location.pathname === "/login";
+  const isAuthPage = path === "/login";
+  const isDoctorPage = path.startsWith("/doctor");
+
+  const hideNavbar = isAuthPage;
+  const hideFooter = isAuthPage || isDoctorPage;
+  const wrapperClass =
+    !hideNavbar && !isDoctorPage ? "pt-14 sm:pt-20 md:pt-16" : "";
 
   return (
-    <div className={!hideNavbar ? "pt-14 sm:pt-20 md:pt-16" : ""}>
+    <div className={wrapperClass}>
       {!hideNavbar && <Navbar />}
 
       <Suspense fallback={<div className="text-center py-20">Loading...</div>}>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact/>} />
-          <Route path="/faq" element={<FAQ/>} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/helpcenter" element={<HelpCenter />} />
           <Route path="/terms&privacy" element={<TermsPrivacy />} />
           <Route path="/doctor/:id" element={<DoctorDetail />} />
+          <Route path="/login" element={<Login />} />
 
+          {/* Doctor dashboard area */}
+          <Route path="/dashboard/doctor" element={<DoctorLayout />}>
+            <Route index element={<DoctorDashboard />} />
+            <Route path="appointments" element={<Appointments />} />
+            <Route path="patients" element={<Patients />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="messages" element={<Messages />} />
+          </Route>
+
+          {/* Patient dashboard */}
+          <Route path="/patient-dashboard" element={<PatientDashboard />} />
         </Routes>
       </Suspense>
 
