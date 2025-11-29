@@ -10,10 +10,15 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
  * POST /api/appointments/create-checkout-session
  * body: { doctorId, date, time }
  */
+// controllers/appointmentController.js (what you showed earlier)
 export const createCheckoutSession = async (req, res) => {
   try {
     const patientUserId = req.user.userId; // from auth middleware
     const { doctorId, date, time } = req.body;
+
+    if (!doctorId || !date || !time) {
+      return res.status(400).json({ message: "Missing doctorId, date or time" });
+    }
 
     const doctorProfile = await DoctorProfile.findById(doctorId).populate("user");
     if (!doctorProfile) {
@@ -23,18 +28,24 @@ export const createCheckoutSession = async (req, res) => {
     const feeInRupees = doctorProfile.fee || 0;
     const amountInPaise = Math.round(feeInRupees * 100);
 
-    // 1) create appointment with pending status
+    if (amountInPaise <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Invalid consultation fee for this doctor" });
+    }
+
+    // 1) Create appointment in DB with "pending" / "unpaid" status
     const appointment = await Appointment.create({
-      doctor: doctorProfile._id,
-      doctorUser: doctorProfile.user._id,
-      patientUser: patientUserId,
+      doctor: doctorProfile._id,          // ref to DoctorProfile
+      doctorUser: doctorProfile.user._id, // owning user of the doctor profile
+      patientUser: patientUserId,         // logged-in user
       date,
       time,
       fee: feeInRupees,
       status: "pending",
     });
 
-    // 2) create Stripe Checkout Session
+    // 2) Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -42,33 +53,33 @@ export const createCheckoutSession = async (req, res) => {
         {
           price_data: {
             currency: "inr",
+            unit_amount: amountInPaise,
             product_data: {
               name: `Consultation with ${doctorProfile.name}`,
             },
-            unit_amount: amountInPaise,
           },
           quantity: 1,
         },
       ],
       metadata: {
         appointmentId: appointment._id.toString(),
-        doctorId: doctorProfile._id.toString(),
-        patientUserId,
       },
       success_url: `${FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL}/payment-cancelled`,
     });
 
-    // save session id on appointment
+    // Optionally store the session id on the appointment
     appointment.stripeSessionId = session.id;
     await appointment.save();
 
+    // 3) Respond to the frontend with the checkout URL
     return res.json({ url: session.url });
   } catch (err) {
     console.error("createCheckoutSession error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * POST /api/appointments/confirm
@@ -77,7 +88,6 @@ export const createCheckoutSession = async (req, res) => {
 export const confirmPayment = async (req, res) => {
   try {
     const { sessionId } = req.body;
-
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid") {
@@ -90,16 +100,18 @@ export const confirmPayment = async (req, res) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    appointment.status = "confirmed";
+    // 👇 Do NOT auto-confirm here
+    // appointment.status = "confirmed";  // remove / comment out
     appointment.stripePaymentIntentId = session.payment_intent;
     await appointment.save();
 
-    return res.json({ message: "Appointment confirmed", appointment });
+    return res.json({ message: "Payment recorded", appointment });
   } catch (err) {
     console.error("confirmPayment error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * GET /api/appointments/my (patient)
@@ -179,3 +191,35 @@ export const getDoctorEarnings = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+// PATCH /api/appointments/:id/confirm
+export const confirmAppointmentByDoctor = async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    const userId = req.user.userId; // doctor user ID from token
+
+    // Find the appointment
+    const appt = await Appointment.findById(appointmentId);
+    if (!appt) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Check authorization (doctor must own the appointment)
+    if (appt.doctorUser.toString() !== userId) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    // Update status
+    appt.status = "confirmed";
+    await appt.save();
+
+    return res.json({
+      message: "Appointment approved successfully",
+      appointment: appt,
+    });
+  } catch (err) {
+    console.error("Doctor confirm error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+

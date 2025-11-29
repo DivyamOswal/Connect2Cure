@@ -8,7 +8,6 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import FeaturesPage from "./components/Features/FeaturePage";
-import DoctorDetail from "./components/DoctorsDetailsPage";
 import Doctors from "./pages/Doctors";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -35,6 +34,9 @@ import DoctorEarnings from "./pages/Doctor/DoctorEarning";
 import PatientDoctor from "./pages/Patient/PatientDoctor";
 import PatientBilling from "./pages/Patient/PatientBilling";
 import DoctorPatient from "./pages/Doctor/DoctorPatient";
+import DoctorDetailsPage from "./components/DoctorsDetailsPage";
+import ChatPage from "./pages/ChatAndVideoCall/ChatPage";
+import VideoCallPage from "./pages/ChatAndVideoCall/VideoCallPage";
 
 const App = () => {
   const location = useLocation();
@@ -65,13 +67,15 @@ const App = () => {
           <Route path="/faq" element={<FAQ />} />
           <Route path="/helpcenter" element={<HelpCenter />} />
           <Route path="/terms&privacy" element={<TermsPrivacy />} />
-          <Route path="/doctor/:id" element={<DoctorDetail />} />
+          <Route path="/doctor/:id" element={<DoctorDetailsPage />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/doctor/register" element={<DoctorRegister />} />
           <Route path="/doctor/onboarding" element={<DoctorOnboarding />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+          <Route path="/videoCall" element={<VideoCallPage />} />
+            <Route path="/chat" element={<ChatPage />} />
 
           {/* Auth routes */}
           <Route path="/login/*" element={<Login />} />

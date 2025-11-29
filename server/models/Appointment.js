@@ -15,18 +15,15 @@ const appointmentSchema = new Schema(
       ref: "User",
       required: true,
     },
+    // just this one:
     patientUser: {
       type: Schema.Types.ObjectId,
       ref: "User",
-    },
-    patient: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true, 
+      required: true,   // <-- make it required instead
     },
 
-    date: { type: String, required: true }, 
-    time: { type: String, required: true }, 
+    date: { type: String, required: true },
+    time: { type: String, required: true },
 
     fee: { type: Number, required: true },
 

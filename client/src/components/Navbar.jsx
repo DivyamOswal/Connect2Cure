@@ -27,7 +27,8 @@ const Navbar = () => {
     { name: "Dashboard", path: "/patient/dashboard" },
     { name: "My Doctors", path: "/patient/doctors" },
     {name:"My Appointments", path:"dashboard/patient/appointments"},
-    { name: "Chat", path: "/patient/chat" },
+    { name: "Chat", path: "/chat" },
+    { name: "VideoCall", path: "/videoCall" },
     { name: "AI Summary", path: "/patient/summary" },
     { name: "Billing", path: "/patient/billing" },
   ];
@@ -36,7 +37,8 @@ const Navbar = () => {
     { name: "Dashboard", path: "dashboard/doctor" },
     { name: "My Patients", path: "/dashboard/doctor/patients" },
     { name: "Appointments", path: "/dashboard/doctor/appointments" },
-    { name: "Chat", path: "/dashboard/doctor/messages" },
+    { name: "Chat", path: "/chat" },
+    { name: "Video Call", path: "/videoCall" },
     { name: "Earnings", path: "dashboard/doctor/earnings" },
   ];
 
@@ -193,6 +195,7 @@ const Navbar = () => {
               </svg>
             </button>
 
+           <Link to="/chat">
             <button
               aria-label="Open chat"
               className={`p-2 rounded-md transition ${
@@ -200,11 +203,6 @@ const Navbar = () => {
                   ? "text-gray-700 hover:bg-gray-100"
                   : "text-white hover:bg-white/10"
               }`}
-              onClick={() =>
-                navigate(
-                  user.role === "doctor" ? "/doctor/chat" : "/patient/chat"
-                )
-              }
               title="Chat"
             >
               {/* chat icon */}
@@ -219,6 +217,7 @@ const Navbar = () => {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </button>
+           </Link>
           </>
         )}
 

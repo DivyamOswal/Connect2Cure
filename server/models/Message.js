@@ -1,15 +1,37 @@
 // server/models/Message.js
 import mongoose from "mongoose";
 
-const messageSchema = new mongoose.Schema(
+const { Schema } = mongoose;
+
+const attachmentSchema = new Schema(
   {
-    from: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    to: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    subject: String,
-    body: String,
-    read: { type: Boolean, default: false },
+    url: String,          // full URL or relative path
+    filename: String,     // stored filename on disk
+    originalName: String, // original file name
+    mimeType: String,
+    size: Number,
+  },
+  { _id: false }
+);
+
+const messageSchema = new Schema(
+  {
+    sender: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    receiver: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    text: { type: String, trim: true, default: "" },
+    attachment: attachmentSchema, // 👈 new
+    isRead: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-export const Message = mongoose.model("Message", messageSchema);
+const Message = mongoose.model("Message", messageSchema);
+export default Message;

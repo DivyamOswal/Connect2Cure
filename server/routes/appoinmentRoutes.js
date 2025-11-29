@@ -6,6 +6,7 @@ import {
   getMyAppointments,
   getDoctorAppointments,
   getDoctorEarnings,
+  confirmAppointmentByDoctor,
 } from "../controllers/appointmentController.js";
 
 const router = express.Router();
@@ -28,5 +29,8 @@ router.get("/doctor", auth(["doctor"]), getDoctorAppointments);
 
 // doctor earnings
 router.get("/earnings", auth(["doctor"]), getDoctorEarnings);
+
+router.patch("/:id/confirm", auth(["doctor"]), confirmAppointmentByDoctor);
+
 
 export default router;

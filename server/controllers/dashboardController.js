@@ -1,12 +1,12 @@
 // controllers/dashboardController.js
 import Appointment from "../models/Appointment.js";
-import { Message } from "../models/Message.js";
+import Message  from "../models/Message.js";
 import DoctorProfile from "../models/DoctorProfile.js";
 
 const getTodayString = () => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10); // "2025-11-30"
+  return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
 };
 
 // /doctor/summary
@@ -61,17 +61,16 @@ export const getDoctorSummary = async (req, res) => {
       Message.countDocuments({ to: userId, read: false }),
       Appointment.find(baseMatch)
         .sort({ date: 1, time: 1 })
-        .limit(5)
-        // populate both possible patient fields
-        .populate({ path: "patient", select: "name email" })
+        .limit(20)
+        // ✅ only populate patientUser (this exists in schema)
         .populate({ path: "patientUser", select: "name email" })
         .lean(),
     ]);
 
-    // normalize: always expose `patient`
+    // If your frontend expects a `patient` field, normalize it here
     const recentAppointments = rawRecentAppointments.map((appt) => ({
       ...appt,
-      patient: appt.patient || appt.patientUser || null,
+      patient: appt.patientUser || null,
     }));
 
     return res.json({
@@ -89,18 +88,14 @@ export const getDoctorSummary = async (req, res) => {
   }
 };
 
-
-
 // /patient/summary
 export const getPatientSummary = async (req, res) => {
   try {
     const patientId = req.user.userId;
     const todayStr = getTodayString();
 
-    // match appointments where this user is patient (new or legacy field)
-    const baseMatch = {
-      $or: [{ patient: patientId }, { patientUser: patientId }],
-    };
+    // If you don't have legacy `patient` field anymore, you can simplify this:
+    const baseMatch = { patientUser: patientId };
 
     const upcomingMatch = {
       ...baseMatch,
@@ -131,4 +126,3 @@ export const getPatientSummary = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
