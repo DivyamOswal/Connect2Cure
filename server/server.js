@@ -6,12 +6,23 @@ import morgan from "morgan";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import onboardingRoutes from "./routes/onboardingRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js"
+import dashboardRoutes from "./routes/dashboardRoutes.js"
+import doctorRoutes from "./routes/doctorRoutes.js"
+import appointmentRoutes from "./routes/appoinmentRoutes.js";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+// after dotenv.config();
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// 🔹 Clean weird %0A from URL path
+
 app.use((req, res, next) => {
   if (typeof req.url === "string") {
     req.url = req.url.replace(/%0A/gi, "");
@@ -19,7 +30,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Log the cleaned URL
 app.use((req, res, next) => {
   console.log("➡️", req.method, JSON.stringify(req.url));
   next();
@@ -37,8 +47,13 @@ app.use(morgan("dev"));
 
 connectDB();
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/onboarding", onboardingRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/appointments", appointmentRoutes);
 
 app.get("/", (req, res) => {
   res.send("Connect2Cure backend running");

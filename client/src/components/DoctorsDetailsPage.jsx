@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
-import doctorData from "../assets/Doctors/doctorData"
+import api from "../api/axios";
+
+const getDoctorImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  return `http://localhost:5000${imagePath}`;
+};
 
 const BookingModal = ({ doctor, onClose }) => {
   const [form, setForm] = useState({ name: "", phone: "", date: "", time: "" });
@@ -10,25 +15,48 @@ const BookingModal = ({ doctor, onClose }) => {
   const handleChange = (e) =>
     setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name || !form.phone || !form.date || !form.time) {
-      setError("Please fill name, phone, date and time.");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    try {
-      console.log("Booking request:", { doctorId: doctor.id, ...form });
-      await new Promise((r) => setTimeout(r, 800));
-      setLoading(false);
-      onClose();
-      alert("Appointment requested successfully!");
-    } catch {
-      setLoading(false);
-      setError("Booking failed. Try again.");
-    }
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!form.name || !form.phone || !form.date || !form.time) {
+    setError("Please fill name, phone, date and time.");
+    return;
+  }
+
+  // ✅ Get logged-in user from localStorage
+  const rawUser = localStorage.getItem("user");
+  const currentUser = rawUser ? JSON.parse(rawUser) : null;
+
+  if (!currentUser) {
+    setError("Please log in as a patient to book an appointment.");
+    // optional: redirect to login and come back
+    // window.location.href = `/login?next=/doctor/${doctor._id}`;
+    return;
+  }
+
+  if (currentUser.role !== "patient") {
+    setError("Only patient accounts can book appointments.");
+    return;
+  }
+
+  setError("");
+  setLoading(true);
+
+  try {
+    const res = await api.post("/appointments/create-checkout-session", {
+      doctorId: doctor._id,
+      date: form.date,
+      time: form.time,
+    });
+    window.location.href = res.data.url;
+  } catch (err) {
+    console.error(err);
+    setLoading(false);
+    setError(
+      err?.response?.data?.message || "Failed to start payment. Try again."
+    );
+  }
+};
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -37,7 +65,9 @@ const BookingModal = ({ doctor, onClose }) => {
           <h3 className="text-lg font-semibold">
             Book Appointment — {doctor.name}
           </h3>
-          <button onClick={onClose} className="text-gray-600">✕</button>
+          <button onClick={onClose} className="text-gray-600">
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -78,7 +108,11 @@ const BookingModal = ({ doctor, onClose }) => {
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border rounded"
+            >
               Cancel
             </button>
             <button
@@ -99,14 +133,33 @@ const DoctorDetail = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+
   const [openBooking, setOpenBooking] = useState(false);
+  const [doctor, setDoctor] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const source = location.state?.source || null;
-  const doctor = doctorData.find((d) => String(d.id) === String(id));
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+
+    api
+      .get(`/doctors/${id}`)
+      .then((res) => setDoctor(res.data))
+      .catch((err) => {
+        console.error("Failed to load doctor", err);
+        setDoctor(null);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center bg-[#F3F4F6] p-6">
+        <p>Loading doctor...</p>
+      </div>
+    );
+  }
 
   if (!doctor) {
     return (
@@ -115,10 +168,16 @@ const DoctorDetail = () => {
           <h2 className="text-xl font-semibold mb-2">Doctor not found</h2>
           <p className="text-gray-600 mb-4">We couldn't locate the doctor.</p>
           <div className="flex justify-center gap-3">
-            <button onClick={() => navigate(-1)} className="px-4 py-2 border rounded">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 border rounded"
+            >
               Go Back
             </button>
-            <Link to="/" className="px-4 py-2 bg-[#FF8040] text-white rounded">
+            <Link
+              to="/"
+              className="px-4 py-2 bg-[#FF8040] text-white rounded"
+            >
               Home
             </Link>
           </div>
@@ -128,6 +187,7 @@ const DoctorDetail = () => {
   }
 
   const backLabel = source === "doctorData" ? "Doctors" : "Home";
+  const imgSrc = getDoctorImageUrl(doctor.image);
 
   return (
     <div className="min-h-[80vh] bg-[#F3F4F6] py-10 px-6 flex justify-center">
@@ -142,11 +202,13 @@ const DoctorDetail = () => {
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <img
-            src={doctor.image}
-            alt={doctor.name}
-            className="w-full h-[70vh] object-cover rounded-lg"
-          />
+          {imgSrc && (
+            <img
+              src={imgSrc}
+              alt={doctor.name}
+              className="w-full h-[70vh] object-cover rounded-lg"
+            />
+          )}
 
           <div className="flex flex-col justify-between">
             <div>
@@ -176,7 +238,9 @@ const DoctorDetail = () => {
               <div className="mt-4 flex items-center gap-6">
                 <div>
                   <h5 className="font-medium text-sm">Experience</h5>
-                  <p className="text-sm text-gray-600">{doctor.experience}</p>
+                  <p className="text-sm text-gray-600">
+                    {doctor.experience}
+                  </p>
                 </div>
                 <div>
                   <h5 className="font-medium text-sm">Fee</h5>
@@ -187,7 +251,7 @@ const DoctorDetail = () => {
               <div className="mt-4">
                 <h5 className="font-medium text-sm">Available Timings</h5>
                 <ul className="text-sm text-gray-600 mt-2 space-y-1">
-                  {doctor.timings.map((t, i) => (
+                  {doctor.timings?.map((t, i) => (
                     <li key={i}>• {t}</li>
                   ))}
                 </ul>
@@ -202,7 +266,7 @@ const DoctorDetail = () => {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-4">
               <button
                 onClick={() => setOpenBooking(true)}
                 className="px-4 bg-[#FF8040] hover:bg-black text-white rounded-lg"

@@ -17,27 +17,31 @@ import HelpCenter from "./pages/HelpCenter";
 import TermsPrivacy from "./pages/TermsPrivacy";
 
 // Dashboards
-import DoctorLayout from "./pages/DoctorLayout";
-import DoctorDashboard from "./pages/DoctorDashboard";
-import PatientDashboard from "./pages/PatientDashboard";
-import Appointments from "./components/Dashboard/Doctor/Appointments";
-import Patients from "./components/Dashboard/Doctor/Patients";
-import Reports from "./components/Dashboard/Doctor/Reports";
-import Messages from "./components/Dashboard/Doctor/Messages";
+import DoctorLayout from "./pages/Doctor/DoctorLayout";
+import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
+import PatientDashboard from "./pages/Patient/PatientDashboard";
 
 // Onboarding pages
-import PatientOnboarding from "./pages/PatientOnboarding";
-import DoctorOnboarding from "./pages/DoctorOnboarding";
+import PatientOnboarding from "./pages/Patient/PatientOnboarding";
+import DoctorOnboarding from "./pages/Doctor/DoctorOnboarding";
+import Profile from "./pages/Profile";
+import SettingsPage from "./pages/Settings";
+import DoctorRegister from "./pages/Doctor/DoctorRegister";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancelled from "./pages/PaymentCancel";
+import DoctorAppointments from "./pages/Doctor/DoctorAppointments";
+import PatientAppointments from "./pages/Patient/PatientAppointments";
+import DoctorEarnings from "./pages/Doctor/DoctorEarning";
+import PatientDoctor from "./pages/Patient/PatientDoctor";
+import PatientBilling from "./pages/Patient/PatientBilling";
+import DoctorPatient from "./pages/Doctor/DoctorPatient";
 
 const App = () => {
   const location = useLocation();
   const path = location.pathname.toLowerCase();
 
-  // auth + onboarding pages (hide navbar)
   const isAuthPage =
     path.startsWith("/login") || path.startsWith("/onboarding/");
-
-  // doctor dashboard pages (hide footer)
   const isDoctorPage = path.startsWith("/dashboard/doctor");
 
   const hideNavbar = isAuthPage;
@@ -62,9 +66,14 @@ const App = () => {
           <Route path="/helpcenter" element={<HelpCenter />} />
           <Route path="/terms&privacy" element={<TermsPrivacy />} />
           <Route path="/doctor/:id" element={<DoctorDetail />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/doctor/register" element={<DoctorRegister />} />
+          <Route path="/doctor/onboarding" element={<DoctorOnboarding />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancelled" element={<PaymentCancelled />} />
 
-          {/* Auth routes (role-aware Login page) */}
-          {/* /login, /login/patient, /login/doctor etc will all render <Login /> */}
+          {/* Auth routes */}
           <Route path="/login/*" element={<Login />} />
 
           {/* Onboarding routes */}
@@ -72,16 +81,21 @@ const App = () => {
           <Route path="/onboarding/doctor" element={<DoctorOnboarding />} />
 
           {/* Doctor dashboard area */}
+          <Route
+            path="/dashboard/patient/appointments"
+            element={<PatientAppointments />}
+          />
           <Route path="/dashboard/doctor" element={<DoctorLayout />}>
             <Route index element={<DoctorDashboard />} />
-            <Route path="appointments" element={<Appointments />} />
-            <Route path="patients" element={<Patients />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="messages" element={<Messages />} />
+            <Route path="appointments" element={<DoctorAppointments />} />
+            <Route path="earnings" element={<DoctorEarnings />} />
+            <Route path="patients" element={<DoctorPatient />} />
           </Route>
 
           {/* Patient dashboard */}
-          <Route path="/patient-dashboard" element={<PatientDashboard />} />
+          <Route path="/patient/dashboard" element={<PatientDashboard />} />
+          <Route path="/patient/doctors" element={<PatientDoctor />} />
+          <Route path="/patient/billing" element={<PatientBilling />} />
         </Routes>
       </Suspense>
 

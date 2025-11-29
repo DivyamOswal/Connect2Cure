@@ -41,18 +41,6 @@ const DoctorSidebar = () => {
         <Users className="min-w-4 w-5 h-5 text-gray-700" />
         <p className="hidden md:inline-block">Patients</p>
       </NavLink>
-
-      {/* Reports */}
-      <NavLink to="/dashboard/doctor/reports" className={baseItemClasses}>
-        <FileText className="min-w-4 w-5 h-5 text-gray-700" />
-        <p className="hidden md:inline-block">Reports</p>
-      </NavLink>
-
-      {/* Messages */}
-      <NavLink to="/dashboard/doctor/messages" className={baseItemClasses}>
-        <MessageCircle className="min-w-4 w-5 h-5 text-gray-700" />
-        <p className="hidden md:inline-block">Messages</p>
-      </NavLink>
     </div>
   );
 };

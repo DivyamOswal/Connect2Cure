@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-/**
- * Role-aware Navbar
- * - Expects user JSON in localStorage under "user" (e.g. { name, role: 'patient'|'doctor', avatar })
- * - Replace getUserFromStorage() if you use a different auth method
- */
+import { User } from "lucide-react";
 
 const getUserFromStorage = () => {
   try {
@@ -31,18 +26,18 @@ const Navbar = () => {
   const patientLinks = [
     { name: "Dashboard", path: "/patient/dashboard" },
     { name: "My Doctors", path: "/patient/doctors" },
+    {name:"My Appointments", path:"dashboard/patient/appointments"},
     { name: "Chat", path: "/patient/chat" },
     { name: "AI Summary", path: "/patient/summary" },
     { name: "Billing", path: "/patient/billing" },
   ];
 
   const doctorLinks = [
-    { name: "Dashboard", path: "/doctor/dashboard" },
-    { name: "My Patients", path: "/doctor/patients" },
-    { name: "Appointments", path: "/doctor/appointments" },
-    { name: "Chat", path: "/doctor/chat" },
-    { name: "AI Tools", path: "/doctor/ai-tools" },
-    { name: "Earnings", path: "/doctor/earnings" },
+    { name: "Dashboard", path: "dashboard/doctor" },
+    { name: "My Patients", path: "/dashboard/doctor/patients" },
+    { name: "Appointments", path: "/dashboard/doctor/appointments" },
+    { name: "Chat", path: "/dashboard/doctor/messages" },
+    { name: "Earnings", path: "dashboard/doctor/earnings" },
   ];
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -132,7 +127,7 @@ const Navbar = () => {
       aria-label="Main navigation"
     >
       {/* Logo */}
-      <Link to={user ? (user.role === "doctor" ? "/doctor/dashboard" : "/patient/dashboard") : "/"} aria-label="Go to homepage">
+      <Link to={"/"} aria-label="Go to homepage">
         <h1
           className={`text-xl sm:text-2xl font-extrabold tracking-wide font-sans ${
             isScrolled ? "text-black" : "text-white"
@@ -143,13 +138,19 @@ const Navbar = () => {
       </Link>
 
       {/* Desktop Nav (only from lg and above) */}
-      <div className="hidden lg:flex items-center gap-8 font-medium text-base" role="menubar" aria-hidden={isMenuOpen}>
+      <div
+        className="hidden lg:flex items-center gap-8 font-medium text-base"
+        role="menubar"
+        aria-hidden={isMenuOpen}
+      >
         {navLinks.map((link, i) => (
           <Link
             key={i}
             to={link.path}
             className={`transition-colors duration-300  ${
-              isScrolled ? "text-gray-700 hover:text-black" : "text-white hover:text-black"
+              isScrolled
+                ? "text-gray-700 hover:text-black"
+                : "text-white hover:text-black"
             }`}
             role="menuitem"
           >
@@ -166,13 +167,28 @@ const Navbar = () => {
             <button
               aria-label="Notifications"
               className={`p-2 rounded-md transition ${
-                isScrolled ? "text-gray-700 hover:bg-gray-100" : "text-white hover:bg-white/10"
+                isScrolled
+                  ? "text-gray-700 hover:bg-gray-100"
+                  : "text-white hover:bg-white/10"
               }`}
-              onClick={() => navigate(user.role === "doctor" ? "/notifications" : "/patient/notifications")}
+              onClick={() =>
+                navigate(
+                  user.role === "doctor"
+                    ? "/notifications"
+                    : "/patient/notifications"
+                )
+              }
               title="Notifications"
             >
               {/* bell icon */}
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18.6 14.2V11a6 6 0 1 0-12 0v3.2c0 .538-.214 1.055-.595 1.395L4 17h11z" />
               </svg>
             </button>
@@ -180,13 +196,26 @@ const Navbar = () => {
             <button
               aria-label="Open chat"
               className={`p-2 rounded-md transition ${
-                isScrolled ? "text-gray-700 hover:bg-gray-100" : "text-white hover:bg-white/10"
+                isScrolled
+                  ? "text-gray-700 hover:bg-gray-100"
+                  : "text-white hover:bg-white/10"
               }`}
-              onClick={() => navigate(user.role === "doctor" ? "/doctor/chat" : "/patient/chat")}
+              onClick={() =>
+                navigate(
+                  user.role === "doctor" ? "/doctor/chat" : "/patient/chat"
+                )
+              }
               title="Chat"
             >
               {/* chat icon */}
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </button>
@@ -198,7 +227,9 @@ const Navbar = () => {
           <>
             <button
               className={`px-4 py-2 rounded-md font-semibold text-sm transition-all hover:cursor-pointer ${
-                isScrolled ? "bg-[#FF8040] text-white hover:bg-black" : "bg-gray-800 text-white hover:bg-black"
+                isScrolled
+                  ? "bg-[#FF8040] text-white hover:bg-black"
+                  : "bg-gray-800 text-white hover:bg-black"
               }`}
               onClick={() => navigate("/login")}
               aria-label="Login or Signup"
@@ -220,13 +251,32 @@ const Navbar = () => {
               aria-label="Open profile menu"
               title="Account"
             >
-              <img
-                src={user.avatar || "/default-avatar.png"}
-                alt="avatar"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <span className={`hidden sm:inline ${isScrolled ? "text-gray-700" : "text-white"}`}>{firstName(user.name)}</span>
-              <svg className={`h-4 w-4 transition-transform ${isProfileOpen ? "rotate-180" : "rotate-0"} ${isScrolled ? "text-gray-700" : "text-white"}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <User className="w-6 h-6 text-white" />
+              )}
+              <span
+                className={`hidden sm:inline ${
+                  isScrolled ? "text-gray-700" : "text-white"
+                }`}
+              >
+                {firstName(user.name)}
+              </span>
+              <svg
+                className={`h-4 w-4 transition-transform ${
+                  isProfileOpen ? "rotate-180" : "rotate-0"
+                } ${isScrolled ? "text-gray-700" : "text-white"}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <path d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -239,14 +289,43 @@ const Navbar = () => {
                 role="menu"
                 aria-label="Profile menu"
               >
-                <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsProfileOpen(false)}>Profile</Link>
-                <Link to="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsProfileOpen(false)}>Settings</Link>
+                <Link
+                  to="/profile"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => setIsProfileOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link
+                  to="/settings"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => setIsProfileOpen(false)}
+                >
+                  Settings
+                </Link>
                 {user.role === "doctor" ? (
-                  <Link to="/doctor/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
+                  <Link
+                    to="dashboard/doctor"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsProfileOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
                 ) : (
-                  <Link to="/patient/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsProfileOpen(false)}>Dashboard</Link>
+                  <Link
+                    to="/patient/dashboard"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsProfileOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
                 )}
-                <button onClick={logout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Logout</button>
+                <button
+                  onClick={logout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  Logout
+                </button>
               </div>
             )}
           </div>
@@ -266,7 +345,9 @@ const Navbar = () => {
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
         >
           <svg
-            className={`h-7 w-7 cursor-pointer ${isScrolled ? "text-gray-700" : "text-white"}`}
+            className={`h-7 w-7 cursor-pointer ${
+              isScrolled ? "text-gray-700" : "text-white"
+            }`}
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -295,7 +376,14 @@ const Navbar = () => {
           onClick={() => setIsMenuOpen(false)}
           aria-label="Close menu"
         >
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -335,7 +423,9 @@ const Navbar = () => {
                 className="px-3 py-2 rounded-md bg-gray-100"
                 onClick={() => {
                   setIsMenuOpen(false);
-                  navigate(user.role === "doctor" ? "/doctor/chat" : "/patient/chat");
+                  navigate(
+                    user.role === "doctor" ? "/doctor/chat" : "/patient/chat"
+                  );
                 }}
               >
                 Open Chat
@@ -344,7 +434,11 @@ const Navbar = () => {
                 className="px-3 py-2 rounded-md bg-gray-100"
                 onClick={() => {
                   setIsMenuOpen(false);
-                  navigate(user.role === "doctor" ? "/doctor/ai-tools" : "/patient/summary");
+                  navigate(
+                    user.role === "doctor"
+                      ? "/doctor/ai-tools"
+                      : "/patient/summary"
+                  );
                 }}
               >
                 AI Summary

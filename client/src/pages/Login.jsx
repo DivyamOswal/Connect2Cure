@@ -35,9 +35,9 @@ const Login = () => {
     setError("");
 
     try {
-      // -------------------------------
+      
       // LOGIN FLOW
-      // -------------------------------
+    
       if (state === "login") {
         const res = await fetch("http://localhost:5000/api/auth/login", {
           method: "POST",
@@ -45,7 +45,7 @@ const Login = () => {
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
-            role, // important: backend validates role
+            role, 
           }),
         });
 
@@ -70,7 +70,7 @@ const Login = () => {
         if (data.user.role === "doctor") {
           window.location.href = "/dashboard/doctor";
         } else {
-          window.location.href = "/patient-dashboard";
+          window.location.href = "/patient/dashboard";
         }
 
         return;
