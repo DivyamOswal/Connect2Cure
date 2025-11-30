@@ -43,37 +43,42 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(cookieParser());
 
-// 👇 CORS: allow localhost + production origin from env
-const allowedOrigins = [
+// ✅ CORS setup
+const baseAllowedOrigins = [
   "http://localhost:5173",
   process.env.CLIENT_ORIGIN,
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
-  "https://connect2-cure-dedu.vercel.app", // hard-coded fallback
-   "https://connect2-cure-dedu-f47xtsfs4-divyamoswals-projects.vercel.app",
+  "https://connect2-cure-dedu.vercel.app", // main prod
 ].filter(Boolean);
+
+// matches e.g. https://connect2-cure-dedu-6zpzbtwb0-divyamoswals-projects.vercel.app
+const vercelPreviewRegex =
+  /^https:\/\/connect2-cure-dedu-.*-divyamoswals-projects\.vercel\.app$/;
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // Postman / curl etc.
+  if (baseAllowedOrigins.includes(origin)) return true;
+  if (vercelPreviewRegex.test(origin)) return true;
+  return false;
+};
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow non-browser / server-to-server (no origin)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
-
-      console.log("❌ CORS blocked origin:", origin);
+      console.log("❌ HTTP CORS blocked origin:", origin);
       return callback(new Error("Not allowed by CORS"), false);
     },
     credentials: true,
   })
 );
 
-
 app.use(morgan("dev"));
 
-// Connect DB (Vercel and local)
+// Connect DB
 connectDB();
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
