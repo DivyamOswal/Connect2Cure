@@ -1,24 +1,20 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-
-// API base URL (works locally + on Vercel)
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-
 const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // API base URL (works locally + on Vercel)
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
   // Detect role based on URL
-  // /login/patient -> "patient"
-  // /login/doctor  -> "doctor"
   const path = location.pathname.toLowerCase();
   const initialRole = path.includes("doctor") ? "doctor" : "patient";
 
   const [state, setState] = useState("login"); // "login" | "register"
-  const [role, setRole] = useState(initialRole); // patient | doctor
+  const [role, setRole] = useState(initialRole); // "patient" | "doctor"
 
   const [formData, setFormData] = useState({
     name: "",
@@ -35,25 +31,27 @@ const Login = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Common redirect logic after successful login
+  // Common redirect logic after successful login/register
   const handlePostLoginRedirect = (user) => {
-  // redirect to onboarding if incomplete
-  if (!user.onboardingCompleted) {
-    if (user.role === "patient") {
-      navigate("/onboarding/patient");
-    } else if (user.role === "doctor") {
-      navigate("/onboarding/doctor");
+    // Redirect to onboarding if incomplete
+    if (!user.onboardingCompleted) {
+      if (user.role === "patient") {
+        navigate("/onboarding/patient");
+      } else if (user.role === "doctor") {
+        navigate("/onboarding/doctor");
+      }
+      return;
     }
-    return;
-  }
 
- // redirect to onboarding after signup
-if (loginData.user.role === "patient") {
-  navigate("/onboarding/patient");
-} else {
-  navigate("/onboarding/doctor");
-}
-
+    // Redirect to main app after onboarding
+    if (user.role === "patient") {
+      navigate("/patient/dashboard");
+    } else if (user.role === "doctor") {
+      navigate("/doctor/dashboard");
+    } else {
+      navigate("/");
+    }
+  };
 
   // Submit form
   const handleSubmit = async (e) => {
@@ -97,7 +95,7 @@ if (loginData.user.role === "patient") {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          role, // store role on register
+          role,
         }),
       });
 
@@ -124,12 +122,8 @@ if (loginData.user.role === "patient") {
       localStorage.setItem("refreshToken", loginData.refreshToken);
       localStorage.setItem("user", JSON.stringify(loginData.user));
 
-      // redirect to onboarding after signup
-      if (loginData.user.role === "patient") {
-        window.location.href = "/onboarding/patient";
-      } else {
-        window.location.href = "/onboarding/doctor";
-      }
+      // Unified redirect logic
+      handlePostLoginRedirect(loginData.user);
     } catch (err) {
       console.error("AUTH ERROR:", err);
       setError(err.message || "Something went wrong");
@@ -160,7 +154,6 @@ if (loginData.user.role === "patient") {
           {state === "login" ? "Welcome back!" : "Create your account"}
         </p>
 
-        {/* Error message */}
         {error && (
           <p className="mt-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg py-2">
             {error}
