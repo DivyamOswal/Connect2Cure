@@ -1,4 +1,4 @@
-// server/index.js
+// server/server.js
 import http from "http";
 import { Server } from "socket.io";
 import app from "./app.js";
@@ -10,12 +10,12 @@ const server = http.createServer(app);
 
 /**
  * 🔌 Socket.IO with VERY PERMISSIVE CORS
- * Allows ANY Origin to connect (including all connect2-cure*.vercel.app)
+ * - Allows ANY Origin
  */
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      // allow any origin
+      // allow any origin (including all connect2-cure*.vercel.app)
       callback(null, true);
     },
     credentials: true,
@@ -23,21 +23,21 @@ const io = new Server(server, {
   },
 });
 
-// Your existing socket logic
 io.on("connection", (socket) => {
   console.log("✅ Socket connected:", socket.id);
 
-  // Example handlers (replace with your own)
-  // socket.on("join-room", (roomId) => {
-  //   socket.join(roomId);
-  // });
+  // Example: auth event you mentioned in client
+  socket.on("authenticate", (token) => {
+    console.log("Socket authenticate token:", token?.slice(0, 10) + "...");
+    // TODO: verify token if you want
+  });
 
   socket.on("disconnect", () => {
     console.log("🔌 Socket disconnected:", socket.id);
   });
 });
 
-// Export io if needed elsewhere
+// Export io if you need it elsewhere
 export { io };
 
 server.listen(PORT, () => {

@@ -1,7 +1,6 @@
 // server/app.js
 import express from "express";
 import dotenv from "dotenv";
-import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import path from "path";
@@ -42,21 +41,35 @@ app.use((req, res, next) => {
 });
 
 /**
- * ✅ VERY PERMISSIVE CORS
- * This will allow ANY origin (including all connect2-cure*.vercel.app)
- * and send Access-Control-Allow-Origin: <request-origin>
- *
- * You can tighten this later if needed.
+ * 🔓 VERY PERMISSIVE CORS (HTTP)
+ * - Allows ANY origin
+ * - Echoes back Origin so credentials can be used
  */
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow all origins, including undefined (like Postman)
-      callback(null, true);
-    },
-    credentials: true,
-  })
-);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin) {
+    res.header("Access-Control-Allow-Origin", origin);
+  } else {
+    res.header("Access-Control-Allow-Origin", "*");
+  }
+
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
 
 app.use(morgan("dev"));
 
@@ -79,7 +92,7 @@ app.use(cookieParser());
 // Connect DB
 connectDB();
 
-// ✅ Serve /uploads/* from server/uploads
+// Serve /uploads/* from server/uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // API routes

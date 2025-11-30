@@ -1,9 +1,15 @@
 // client/src/api/axios.js
 import axios from "axios";
 
-// Use env var in prod, fallback to localhost for dev
+const isProd = import.meta.env.PROD;
+
+// In dev: default to localhost
+// In prod: default to your Render backend, unless VITE_API_BASE_URL overrides it
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_BASE_URL ||
+  (isProd
+    ? "https://connect2cure-backend.onrender.com/api"
+    : "http://localhost:5000/api");
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -66,9 +72,11 @@ api.interceptors.response.use(
       }
 
       try {
-        const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-          refreshToken,
-        });
+        // use api.defaults.baseURL so it's always consistent
+        const res = await axios.post(
+          `${api.defaults.baseURL}/auth/refresh`,
+          { refreshToken }
+        );
 
         const newAccessToken = res.data.accessToken;
 
