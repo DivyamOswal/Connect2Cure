@@ -18,6 +18,7 @@ import messageRoutes from "./routes/messageRoutes.js";
 import callRoutes from "./routes/callRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import billingRoutes from "./routes/billingRoutes.js";
+import { handleStripeWebhook } from "./controllers/billingController.js";
 
 dotenv.config();
 
@@ -39,9 +40,6 @@ app.use((req, res, next) => {
   console.log("➡", req.method, JSON.stringify(req.url));
   next();
 });
-
-app.use(express.json());
-app.use(cookieParser());
 
 // ✅ CORS setup
 const baseAllowedOrigins = [
@@ -78,12 +76,28 @@ app.use(
 
 app.use(morgan("dev"));
 
+/**
+ * ⚠️ IMPORTANT: Stripe Webhook route with RAW body
+ * This MUST come BEFORE express.json() so Stripe signature verification works.
+ * In Stripe dashboard, set endpoint as: https://your-backend.com/api/billing/webhook
+ */
+app.post(
+  "/api/billing/webhook",
+  express.raw({ type: "application/json" }),
+  handleStripeWebhook
+);
+
+// After webhook is defined, you can safely parse JSON for all other routes
+app.use(express.json());
+app.use(cookieParser());
+
 // Connect DB
 connectDB();
 
 // ✅ Serve /uploads/* from server/uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/profile", profileRoutes);
