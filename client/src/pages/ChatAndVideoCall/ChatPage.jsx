@@ -121,55 +121,56 @@ const ChatPage = () => {
 
   // Send a new message (with optional file)
   const handleSendMessage = async ({ text, file }) => {
-    if (!selectedUser || !text?.trim()) return;
+  if (!selectedUser || (!text?.trim() && !file)) return;
 
-    let attachment = null;
+  let attachment = null;
 
-    try {
-      // 1) Upload file if provided
-      if (file) {
-        const formData = new FormData();
-        formData.append("file", file);
+  try {
+    // 1) Upload file if provided
+    if (file) {
+      const formData = new FormData();
+      formData.append("file", file);
 
-        const res = await fetch(`${API_BASE_URL}/messages/upload`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          console.error("Upload failed:", data.message);
-        } else {
-          attachment = data.attachment; // { url, filename, ... }
-        }
-      }
-
-      // 2) Optimistically add to UI
-      const tempMsg = {
-        _id: `temp-${Date.now()}`,
-        text,
-        attachment,
-        sender: currentUser?._id || currentUser?.id,
-        receiver: selectedUser._id,
-        createdAt: new Date().toISOString(),
-        pending: true,
-      };
-
-      setMessages((prev) => [...prev, tempMsg]);
-
-      // 3) Emit via socket
-      socket.emit("send-message", {
-        receiverId: selectedUser._id,
-        text,
-        attachment,
+      const res = await fetch(`${API_BASE_URL}/messages/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       });
-    } catch (err) {
-      console.error("Failed to send message", err);
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Upload failed:", data.message);
+      } else {
+        attachment = data.attachment; // { url, originalName, mimeType, ... }
+      }
     }
-  };
+
+    // 2) Optimistically add to UI
+    const tempMsg = {
+      _id: `temp-${Date.now()}`,
+      text: text?.trim() || "",
+      attachment,
+      sender: currentUser?._id || currentUser?.id,
+      receiver: selectedUser._id,
+      createdAt: new Date().toISOString(),
+      pending: true,
+    };
+
+    setMessages((prev) => [...prev, tempMsg]);
+
+    // 3) Emit via socket
+    socket.emit("send-message", {
+      receiverId: selectedUser._id,
+      text: text?.trim() || "",
+      attachment,
+    });
+  } catch (err) {
+    console.error("Failed to send message", err);
+  }
+};
+
 
   const handleStartCall = (otherUserId) => {
     if (!otherUserId) return;
