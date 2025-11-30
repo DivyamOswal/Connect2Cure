@@ -1,10 +1,15 @@
 // client/src/socket.js
 import { io } from "socket.io-client";
 
-const URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+let socket = null;
 
-const socket = io(URL, {
-  withCredentials: true,
-});
+export const connectSocket = () => {
+  if (!socket) {
+    socket = io(import.meta.env.VITE_BASE_URL, {
+      withCredentials: true,
+    });
+  }
+  return socket;
+};
 
-export default socket;
+export { socket };

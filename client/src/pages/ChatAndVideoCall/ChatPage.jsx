@@ -22,7 +22,7 @@ const ChatPage = () => {
       return;
     }
 
-    connectSocket(token);
+    connectSocket();
 
     const handleIncoming = (msg) => {
       if (
