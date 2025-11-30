@@ -42,24 +42,36 @@ app.use((req, res, next) => {
 });
 
 // ✅ CORS setup
+// Explicitly allowed origins
 const baseAllowedOrigins = [
   "http://localhost:5173",
+
+  // main deployed frontends
+  "https://connect2-cure.vercel.app",
+  "https://connect2-cure-dedu.vercel.app",
+
+  // any extra domains you might set via env
   process.env.CLIENT_ORIGIN,
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
-   "https://connect2-cure.vercel.app", 
-  "https://connect2-cure-dedu.vercel.app", // main prod
-
 ].filter(Boolean);
 
-// matches e.g. https://connect2-cure-dedu-6zpzbtwb0-divyamoswals-projects.vercel.app
-const vercelPreviewRegex =
-  /^https:\/\/connect2-cure-dedu-.*-divyamoswals-projects\.vercel\.app$/;
+// Allow ALL Vercel preview URLs that start with "connect2-cure"
+//
+// Examples this will match:
+//  - https://connect2-cure.vercel.app
+//  - https://connect2-cure-j7zrwblts-divyamoswals-projects.vercel.app
+//  - https://connect2-cure-something-else.vercel.app
+//
+const connect2CureRegex = /^https:\/\/connect2-cure.*\.vercel\.app$/;
 
 const isAllowedOrigin = (origin) => {
-  if (!origin) return true; // Postman / curl etc.
+  if (!origin) return true; // Postman / curl / server-to-server
+
   if (baseAllowedOrigins.includes(origin)) return true;
-  if (vercelPreviewRegex.test(origin)) return true;
+
+  if (connect2CureRegex.test(origin)) return true;
+
   return false;
 };
 
@@ -81,7 +93,7 @@ app.use(morgan("dev"));
 /**
  * ⚠️ Stripe Webhook route with RAW body
  * This MUST come BEFORE express.json() so Stripe signature verification works.
- * In Stripe dashboard, set endpoint as: https://your-backend.com/api/billing/webhook
+ * In Stripe dashboard, set endpoint as: https://connect2cure-backend.onrender.com/api/billing/webhook
  */
 app.post(
   "/api/billing/webhook",
