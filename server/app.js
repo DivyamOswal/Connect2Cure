@@ -41,48 +41,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ CORS setup
-// Explicitly allowed origins
-const baseAllowedOrigins = [
-  "http://localhost:5173",
-
-  // main deployed frontends
-  "https://connect2-cure.vercel.app",
-  "https://connect2-cure-dedu.vercel.app",
-
-  // any extra domains you might set via env
-  process.env.CLIENT_ORIGIN,
-  process.env.FRONTEND_URL,
-  process.env.CLIENT_URL,
-].filter(Boolean);
-
-// Allow ALL Vercel preview URLs that start with "connect2-cure"
-//
-// Examples this will match:
-//  - https://connect2-cure.vercel.app
-//  - https://connect2-cure-j7zrwblts-divyamoswals-projects.vercel.app
-//  - https://connect2-cure-something-else.vercel.app
-//
-const connect2CureRegex = /^https:\/\/connect2-cure.*\.vercel\.app$/;
-
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true; // Postman / curl / server-to-server
-
-  if (baseAllowedOrigins.includes(origin)) return true;
-
-  if (connect2CureRegex.test(origin)) return true;
-
-  return false;
-};
-
+/**
+ * ✅ VERY PERMISSIVE CORS
+ * This will allow ANY origin (including all connect2-cure*.vercel.app)
+ * and send Access-Control-Allow-Origin: <request-origin>
+ *
+ * You can tighten this later if needed.
+ */
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (isAllowedOrigin(origin)) {
-        return callback(null, true);
-      }
-      console.log("❌ HTTP CORS blocked origin:", origin);
-      return callback(new Error("Not allowed by CORS"), false);
+      // allow all origins, including undefined (like Postman)
+      callback(null, true);
     },
     credentials: true,
   })
@@ -93,7 +63,8 @@ app.use(morgan("dev"));
 /**
  * ⚠️ Stripe Webhook route with RAW body
  * This MUST come BEFORE express.json() so Stripe signature verification works.
- * In Stripe dashboard, set endpoint as: https://connect2cure-backend.onrender.com/api/billing/webhook
+ * In Stripe dashboard, set endpoint as:
+ *   https://connect2cure-backend.onrender.com/api/billing/webhook
  */
 app.post(
   "/api/billing/webhook",
