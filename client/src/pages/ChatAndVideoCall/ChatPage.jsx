@@ -1,10 +1,10 @@
-// src/pages/ChatPage.jsx
+// client/src/pages/ChatAndVideoCall/ChatPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import socket from "../../socket"; // ✅ default import now
 import ChatSidebar from "../../components/ChatAndVideo/ChatSidebar";
 import ChatWindow from "../../components/ChatAndVideo/ChatWindow";
-import { connectSocket, socket } from "../../socket";
 
 const ChatPage = () => {
   const navigate = useNavigate();
@@ -22,15 +22,10 @@ const ChatPage = () => {
       return;
     }
 
-    connectSocket();
+    // 🔥 no connectSocket() call needed anymore
 
     const handleIncoming = (msg) => {
-      if (
-        !selectedUser ||
-        !selectedUser._id ||
-        !msg
-      )
-        return;
+      if (!selectedUser || !selectedUser._id || !msg) return;
 
       const isRelevant =
         String(msg.sender) === selectedUser._id ||
@@ -39,7 +34,6 @@ const ChatPage = () => {
       if (!isRelevant) return;
 
       setMessages((prev) => {
-        // avoid duplicates by _id
         if (msg._id && prev.some((m) => m._id === msg._id)) {
           return prev;
         }
@@ -68,7 +62,6 @@ const ChatPage = () => {
         const data = await res.json();
         setThreads(data);
 
-        // optional: auto-select first thread
         if (data.length > 0 && !selectedUser) {
           handleSelectUser(data[0].user);
         }
@@ -81,7 +74,6 @@ const ChatPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // load conversation from DB whenever you pick a user
   const handleSelectUser = async (user) => {
     setSelectedUser(user);
     try {
@@ -92,52 +84,43 @@ const ChatPage = () => {
         }
       );
       const data = await res.json();
-      setMessages(data); // these come from MongoDB
+      setMessages(data);
     } catch (err) {
       console.error("Failed to load conversation", err);
     }
   };
 
-  // send message via socket (text + optional file; server will emit events)
   const handleSendMessage = async ({ text, file }) => {
     if (!selectedUser) return;
 
     let attachment = null;
 
     try {
-      // 1) If there is a file, upload it first
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
 
-        const res = await fetch(
-          "http://localhost:5000/api/messages/upload",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              // don't set Content-Type manually with FormData
-            },
-            body: formData,
-          }
-        );
+        const res = await fetch("http://localhost:5000/api/messages/upload", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
 
         const data = await res.json();
         if (!res.ok) {
           console.error("Upload failed:", data.message);
         } else {
-          attachment = data.attachment; // { url, filename, originalName, mimeType, size }
+          attachment = data.attachment;
         }
       }
 
-      // 2) Emit via Socket.IO
       socket.emit("send-message", {
         receiverId: selectedUser._id,
         text,
         attachment,
       });
-
-      // ❌ No optimistic push here – we'll rely on `message-sent` / `receive-message`
     } catch (err) {
       console.error("Failed to send message", err);
     }

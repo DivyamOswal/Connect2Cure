@@ -1,15 +1,9 @@
 // client/src/socket.js
 import { io } from "socket.io-client";
 
-let socket = null;
+// create and export a single connected socket instance
+const socket = io(import.meta.env.VITE_BASE_URL, {
+  withCredentials: true,
+});
 
-export const connectSocket = () => {
-  if (!socket) {
-    socket = io(import.meta.env.VITE_BASE_URL, {
-      withCredentials: true,
-    });
-  }
-  return socket;
-};
-
-export { socket };
+export default socket;
