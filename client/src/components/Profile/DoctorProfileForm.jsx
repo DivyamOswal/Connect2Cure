@@ -77,7 +77,7 @@ export default function DoctorProfileForm({ initialData, onSubmit, loading }) {
       </div>
 
       <button
-        className="bg-blue-600 text-white px-4 py-2 rounded"
+        className="bg-[#FF8040] text-white px-4 py-2 rounded"
         disabled={loading}
       >
         {loading ? "Saving..." : "Save"}

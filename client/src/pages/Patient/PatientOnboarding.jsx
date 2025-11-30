@@ -50,7 +50,7 @@ const PatientOnboarding = () => {
   return (
     <div className="max-w-lg mx-auto mt-10 p-6 bg-white rounded-xl shadow">
       <h2 className="text-xl font-semibold mb-4">Patient details</h2>
-      {message && <p className="mb-3 text-sm text-blue-600">{message}</p>}
+      {message && <p className="mb-3 text-sm text-[#FF8040]">{message}</p>}
       <form onSubmit={handleSubmit} className="space-y-3">
         <input
           name="phone"

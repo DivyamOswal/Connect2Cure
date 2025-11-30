@@ -26,11 +26,13 @@ const Navbar = () => {
   const patientLinks = [
     { name: "Dashboard", path: "/patient/dashboard" },
     { name: "My Doctors", path: "/patient/doctors" },
+    { name: "All Doctors", path: "/doctors" },
     {name:"My Appointments", path:"dashboard/patient/appointments"},
     { name: "Chat", path: "/chat" },
     { name: "VideoCall", path: "/videoCall" },
     { name: "AI Summary", path: "/patient/summary" },
     { name: "Billing", path: "/patient/billing" },
+    { name: "Plans", path: "/patient/plans" },
   ];
 
   const doctorLinks = [

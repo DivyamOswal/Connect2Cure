@@ -1,63 +1,123 @@
 // src/components/Home/Doctors.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Navigation } from "swiper/modules";
+import { Autoplay } from "swiper/modules";
 import "swiper/css";
-
-import Title from "../Title";
-import doctorData from "../../assets/Home/Doctors/doctorData";
 import { Link } from "react-router-dom";
 
+import Title from "../Title";
+import api from "../../api/axios";
+
+// Helper to turn /uploads/... into full URL
+const getDoctorImageUrl = (imagePath) => {
+  if (!imagePath) return null; // don't render <img src="">
+  return `http://localhost:5000${imagePath}`;
+};
+
 const Doctors = () => {
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .get("/doctors")
+      .then((res) => {
+        setDoctors(res.data || []);
+      })
+      .catch((err) => {
+        console.error("Failed to load doctors", err);
+        setDoctors([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="bg-[#E6E6E6] px-6 py-5 md:px-16 lg:px-24 xl:px-32 overflow-hidden">
-      <Title title="Meet Our Doctors" />
+      <Title title="Meet Our Doctors" subtitle="Your Health, Our Expert Hands" />
 
       <div className="mx-auto">
-        <Swiper
-          modules={[Autoplay]}
-          spaceBetween={24}
-          slidesPerView={1}
-          autoplay={{ delay: 2500, disableOnInteraction: false }}
-          loop={true}
-          breakpoints={{
-            640: { slidesPerView: 1 }, // mobile
-            768: { slidesPerView: 2 }, // tablet
-            1024: { slidesPerView: 4 }, // desktop
-          }}
-          aria-live="polite"
-        >
-          {doctorData.map((doctor) => (
-            <SwiperSlide key={doctor.id} className="pt-4">
-              <Link
-                to={`/doctor/${doctor.id}`}
-                state={{ source: "doctorData" }}
-                aria-label={`View details for ${doctor.name}`}
-              >
-                <div className="rounded-lg shadow hover:shadow-lg transition bg-white overflow-hidden">
-                  <img
-                    src={doctor.image}
-                    alt={doctor.name}
-                    loading="lazy"
-                    className="w-full h-80 object-cover rounded-t-lg"
-                  />
+        {loading && (
+          <p className="text-center text-sm text-gray-600 py-4">
+            Loading doctors...
+          </p>
+        )}
 
-                  <div className="p-3">
-                    <h2 className="font-semibold text-sm mt-2">{doctor.name}</h2>
+        {!loading && doctors.length === 0 && (
+          <p className="text-center text-sm text-gray-600 py-4">
+            No doctors available right now.
+          </p>
+        )}
 
-                    <p className="text-xs text-gray-600">{doctor.degree}</p>
+        {!loading && doctors.length > 0 && (
+          <Swiper
+            modules={[Autoplay]}
+            spaceBetween={24}
+            slidesPerView={1}
+            autoplay={{ delay: 2500, disableOnInteraction: false }}
+            loop={doctors.length > 1}
+            breakpoints={{
+              640: { slidesPerView: 1 }, // mobile
+              768: { slidesPerView: 2 }, // tablet
+              1024: { slidesPerView: 4 }, // desktop
+            }}
+            aria-live="polite"
+          >
+            {doctors.map((doctor) => {
+              const imgSrc = getDoctorImageUrl(doctor.image);
 
-                    <p className="text-sm text-[#FF8040] font-medium">
-                      {doctor.specialization}
-                    </p>
+              return (
+                <SwiperSlide key={doctor._id} className="pt-4">
+                  <Link
+                    to={`/doctor/${doctor._id}`}
+                    state={{ source: "doctorData" }}
+                    aria-label={`View details for ${doctor.name}`}
+                  >
+                    <div className="rounded-lg shadow hover:shadow-lg transition bg-white overflow-hidden">
+                      {imgSrc && (
+                        <img
+                          src={imgSrc}
+                          alt={doctor.name}
+                          loading="lazy"
+                          className="w-full h-60 object-cover rounded-t-lg"
+                        />
+                      )}
 
-                    <p className="text-xs text-gray-500 mt-1">📍 {doctor.location}</p>
-                  </div>
-                </div>
-              </Link>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+                      <div className="p-3">
+                        <h2 className="font-semibold text-sm mt-2">
+                          {doctor.name}
+                        </h2>
+
+                        <p className="text-xs text-gray-600">
+                          {doctor.degree}
+                        </p>
+
+                        <p className="text-sm text-[#FF8040] font-medium">
+                          {doctor.specialization}
+                        </p>
+
+                        <p className="text-xs text-gray-500 mt-1">
+                          📍 {doctor.location}
+                        </p>
+
+                        {doctor.rating !== undefined && (
+                          <p className="text-xs text-gray-700 mt-1">
+                            ⭐ {doctor.rating} ({doctor.reviews} reviews)
+                          </p>
+                        )}
+
+                        {doctor.fee !== undefined && (
+                          <p className="text-sm font-semibold text-gray-900 mt-2">
+                            Fee: ₹{doctor.fee}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </SwiperSlide>
+              );
+            })}
+          </Swiper>
+        )}
 
         <div className="flex items-center justify-center pt-7">
           <Link to="/doctors">

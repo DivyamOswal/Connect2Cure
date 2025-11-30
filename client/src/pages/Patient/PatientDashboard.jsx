@@ -1,13 +1,28 @@
 // src/pages/PatientDashboard.jsx
 import React, { useEffect, useState } from "react";
-import api from "../../api/axios";
+import { useNavigate } from "react-router-dom";
 
+import ReportForm from "../../components/ReportForm";
+import ReportSummary from "../../components/ReportSummary";
+import ChartsSection from "../../components/ChartsSection";
+import api from "../../api/axios";
+import { analyzeReportFile } from "../../api/reportApi";
 
 const PatientDashboard = () => {
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState(null);
   const [upcoming, setUpcoming] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // NEW: summary + charts state
+  const [credits, setCredits] = useState(0);
+  const [summary, setSummary] = useState("");
+  const [medicalTerms, setMedicalTerms] = useState([]);
+  const [charts, setCharts] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -18,20 +33,19 @@ const PatientDashboard = () => {
           return;
         }
 
-        const res = await api.get("/appointments/my");
+        // appointments + user info
+        const [apptRes, meRes] = await Promise.all([
+          api.get("/appointments/my"),
+          api.get("/auth/me"),
+        ]);
 
-        const appts = res.data || [];
-
+        const appts = apptRes.data || [];
         const now = new Date();
 
-        // upcoming = confirmed & datetime in the future
         const upcomingAppts = appts
           .filter((a) => {
             if (a.status !== "confirmed") return false;
-            // date is string "YYYY-MM-DD", time "HH:mm"
-            const dtString = a.time
-              ? `${a.date}T${a.time}`
-              : `${a.date}T00:00`;
+            const dtString = a.time ? `${a.date}T${a.time}` : `${a.date}T00:00`;
             const when = new Date(dtString);
             return when >= now;
           })
@@ -47,6 +61,9 @@ const PatientDashboard = () => {
         });
 
         setUpcoming(upcomingAppts);
+
+        // set credits from /auth/me
+        setCredits(meRes.data?.credits ?? 0);
       } catch (err) {
         console.error("PATIENT DASHBOARD ERROR:", err);
         setError(
@@ -59,6 +76,30 @@ const PatientDashboard = () => {
 
     fetchSummary();
   }, []);
+
+  // 🔥 THIS IS YOUR FUNCTION, wired in:
+  const handleFileSubmit = async (e, file) => {
+    e.preventDefault();
+    setAnalysisError("");
+    setAnalyzing(true);
+
+    try {
+      const { report, remainingCredits } = await analyzeReportFile(file);
+
+      setSummary(report.summary);
+      setMedicalTerms(report.medicalTerms);
+      setCharts(report.charts);
+      setCredits(remainingCredits);
+    } catch (err) {
+      if (err?.response?.status === 402) {
+        navigate("/plans");
+      } else {
+        setAnalysisError("Failed to analyze report.");
+      }
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   if (loading) {
     return <p className="text-gray-500 px-4 py-4">Loading dashboard...</p>;
@@ -73,10 +114,17 @@ const PatientDashboard = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-semibold mb-4">My Health Overview</h1>
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">My Health Overview</h1>
+        <div className="text-sm">
+          Credits:{" "}
+          <span className="font-semibold text-green-600">{credits}</span>
+        </div>
+      </div>
 
-      <div className="grid gap-4 mb-6 sm:grid-cols-2">
+      {/* stats */}
+      <div className="grid gap-4 mb-2 sm:grid-cols-2">
         <DashboardCard
           label="Total appointments"
           value={stats?.totalAppointments ?? 0}
@@ -87,6 +135,7 @@ const PatientDashboard = () => {
         />
       </div>
 
+      {/* upcoming appointments */}
       <div className="bg-white rounded-xl shadow p-4">
         <h2 className="text-lg font-medium mb-3">Upcoming appointments</h2>
         {upcoming.length === 0 ? (
@@ -101,6 +150,7 @@ const PatientDashboard = () => {
                 <th className="py-2">Status</th>
               </tr>
             </thead>
+
             <tbody>
               {upcoming.map((appt) => (
                 <tr key={appt._id} className="border-b last:border-b-0">
@@ -120,6 +170,8 @@ const PatientDashboard = () => {
           </table>
         )}
       </div>
+
+      
     </div>
   );
 };

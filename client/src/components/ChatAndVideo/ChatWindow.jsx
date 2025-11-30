@@ -47,7 +47,7 @@ const ChatWindow = ({ user, messages, onSend, onCall }) => {
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="mt-2 inline-block text-xs text-blue-600 underline"
+        className="mt-2 inline-block text-xs text-[#FF8040]/90 underline"
       >
         📎 {originalName || "Download file"}
       </a>

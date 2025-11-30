@@ -55,7 +55,7 @@ const AllDoctors = () => {
                   <img
                     src={imgSrc}
                     alt={doctor.name}
-                    className="w-full h-72 object-cover rounded-t-lg"
+                    className="w-full h-65 object-cover rounded-t-lg"
                   />
                 )}
 

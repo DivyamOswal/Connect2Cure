@@ -24,32 +24,35 @@ const ChatPage = () => {
 
     connectSocket(token);
 
-    const handleReceive = (msg) => {
+    const handleIncoming = (msg) => {
       if (
-        selectedUser &&
-        (String(msg.sender) === selectedUser._id ||
-          String(msg.receiver) === selectedUser._id)
-      ) {
-        setMessages((prev) => [...prev, msg]);
-      }
+        !selectedUser ||
+        !selectedUser._id ||
+        !msg
+      )
+        return;
+
+      const isRelevant =
+        String(msg.sender) === selectedUser._id ||
+        String(msg.receiver) === selectedUser._id;
+
+      if (!isRelevant) return;
+
+      setMessages((prev) => {
+        // avoid duplicates by _id
+        if (msg._id && prev.some((m) => m._id === msg._id)) {
+          return prev;
+        }
+        return [...prev, msg];
+      });
     };
 
-    const handleSent = (msg) => {
-      if (
-        selectedUser &&
-        (String(msg.sender) === selectedUser._id ||
-          String(msg.receiver) === selectedUser._id)
-      ) {
-        setMessages((prev) => [...prev, msg]);
-      }
-    };
-
-    socket.on("receive-message", handleReceive);
-    socket.on("message-sent", handleSent);
+    socket.on("receive-message", handleIncoming);
+    socket.on("message-sent", handleIncoming);
 
     return () => {
-      socket.off("receive-message", handleReceive);
-      socket.off("message-sent", handleSent);
+      socket.off("receive-message", handleIncoming);
+      socket.off("message-sent", handleIncoming);
     };
   }, [token, selectedUser, navigate]);
 
@@ -95,7 +98,7 @@ const ChatPage = () => {
     }
   };
 
-  // send message via socket (text + optional file; writes to DB)
+  // send message via socket (text + optional file; server will emit events)
   const handleSendMessage = async ({ text, file }) => {
     if (!selectedUser) return;
 
@@ -134,18 +137,7 @@ const ChatPage = () => {
         attachment,
       });
 
-      // 3) Optimistic UI (will be replaced by DB version when message-sent/receive-message arrives)
-      setMessages((prev) => [
-        ...prev,
-        {
-          _id: `temp-${Date.now()}`,
-          text,
-          sender: currentUser._id,
-          receiver: selectedUser._id,
-          attachment,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      // ❌ No optimistic push here – we'll rely on `message-sent` / `receive-message`
     } catch (err) {
       console.error("Failed to send message", err);
     }
@@ -167,7 +159,7 @@ const ChatPage = () => {
       <ChatWindow
         user={selectedUser}
         messages={messages}
-        onSend={handleSendMessage}  
+        onSend={handleSendMessage}
         onCall={handleStartCall}
       />
     </div>

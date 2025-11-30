@@ -38,6 +38,13 @@ import DoctorDetailsPage from "./components/DoctorsDetailsPage";
 import ChatPage from "./pages/ChatAndVideoCall/ChatPage";
 import VideoCallPage from "./pages/ChatAndVideoCall/VideoCallPage";
 
+// 🔹 Credits / plans & summary
+import PlansPage from "./pages/PlansPage";
+import NewSummaryPage from "./pages/NewSummaryPage";
+
+// 🔹 NEW: public shared-report view
+import SharedReportPage from "./pages/SharedReportPage";
+
 const App = () => {
   const location = useLocation();
   const path = location.pathname.toLowerCase();
@@ -75,7 +82,13 @@ const App = () => {
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-cancelled" element={<PaymentCancelled />} />
           <Route path="/videoCall" element={<VideoCallPage />} />
-            <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+
+          {/* 🔹 Plans route */}
+          <Route path="/plans" element={<PlansPage />} />
+
+          {/* 🔹 NEW: public shared report route (no auth) */}
+          <Route path="/share/:shareId" element={<SharedReportPage />} />
 
           {/* Auth routes */}
           <Route path="/login/*" element={<Login />} />
@@ -84,22 +97,24 @@ const App = () => {
           <Route path="/onboarding/patient" element={<PatientOnboarding />} />
           <Route path="/onboarding/doctor" element={<DoctorOnboarding />} />
 
-          {/* Doctor dashboard area */}
+          {/* Patient dashboard area */}
           <Route
             path="/dashboard/patient/appointments"
             element={<PatientAppointments />}
           />
+          <Route path="/patient/dashboard" element={<PatientDashboard />} />
+          <Route path="/patient/doctors" element={<PatientDoctor />} />
+          <Route path="/patient/summary" element={<NewSummaryPage />} />
+          <Route path="/patient/billing" element={<PatientBilling />} />
+          <Route path="/patient/plans" element={<PlansPage />} />
+
+          {/* Doctor dashboard area */}
           <Route path="/dashboard/doctor" element={<DoctorLayout />}>
             <Route index element={<DoctorDashboard />} />
             <Route path="appointments" element={<DoctorAppointments />} />
             <Route path="earnings" element={<DoctorEarnings />} />
             <Route path="patients" element={<DoctorPatient />} />
           </Route>
-
-          {/* Patient dashboard */}
-          <Route path="/patient/dashboard" element={<PatientDashboard />} />
-          <Route path="/patient/doctors" element={<PatientDoctor />} />
-          <Route path="/patient/billing" element={<PatientBilling />} />
         </Routes>
       </Suspense>
 

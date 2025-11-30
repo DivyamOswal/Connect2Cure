@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
       enum: ["patient", "doctor", "admin"],
       default: "patient",
     },
+     credits: {type: Number,default: 1},
     onboardingCompleted: { type: Boolean, default: false },
   },
   { timestamps: true }

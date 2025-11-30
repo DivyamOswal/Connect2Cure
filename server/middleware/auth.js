@@ -12,9 +12,11 @@ export const auth = (roles = []) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+
       if (roles.length && !roles.includes(decoded.role)) {
         return res.status(403).json({ message: "Forbidden" });
       }
+
       req.user = decoded; // { userId, role }
       next();
     } catch (err) {

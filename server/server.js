@@ -18,6 +18,8 @@ import doctorRoutes from "./routes/doctorRoutes.js";
 import appointmentRoutes from "./routes/appoinmentRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import callRoutes from "./routes/callRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import billingRoutes from "./routes/billingRoutes.js";
 
 import registerSockets from "./sockets.js";
 
@@ -64,6 +66,8 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/messages", messageRoutes);    // 🆕
 app.use("/api/calls", callRoutes);   // 🆕
+app.use('/api/reports', reportRoutes);
+app.use("/api/billing", billingRoutes);
 
 app.get("/", (req, res) => {
   res.send("Connect2Cure backend running");

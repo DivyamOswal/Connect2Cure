@@ -5,7 +5,7 @@ const MessageBubble = ({ isMine, text }) => {
     <div
       className={`max-w-xs p-3 rounded-lg ${
         isMine
-          ? "bg-blue-600 text-white ml-auto"
+          ? "bg-[#FF8040] text-white ml-auto"
           : "bg-gray-300 text-black mr-auto"
       }`}
     >
