@@ -30,7 +30,6 @@ const PatientBilling = () => {
           return;
         }
 
-        // appointments + credit transactions in parallel
         const [apptRes, txRes] = await Promise.all([
           api.get("/appointments/my"),
           api.get("/billing/my-transactions"),
@@ -39,7 +38,7 @@ const PatientBilling = () => {
         const appts = apptRes.data || [];
         const txs = txRes.data || [];
 
-        // --- APPOINTMENT PAYMENTS (your old logic) ---
+        // --- APPOINTMENT PAYMENTS ---
         const paidAppts = appts.filter(
           (a) =>
             a.status === "confirmed" ||
@@ -59,8 +58,10 @@ const PatientBilling = () => {
         });
 
         // --- CREDIT (PLAN) TRANSACTIONS ---
-        // tx.amount is stored in smallest units (paise) on backend
-        const totalCredits = txs.reduce((sum, t) => sum + (t.credits || 0), 0);
+        const totalCredits = txs.reduce(
+          (sum, t) => sum + (t.credits || 0),
+          0
+        );
         const totalAmountMinor = txs.reduce(
           (sum, t) => sum + (t.amount || 0),
           0
@@ -69,7 +70,7 @@ const PatientBilling = () => {
         setCreditTxs(txs);
         setCreditSummary({
           totalCredits,
-          totalAmount: totalAmountMinor, // still in paise here
+          totalAmount: totalAmountMinor,
         });
       } catch (err) {
         console.error("PATIENT BILLING ERROR:", err);
@@ -98,7 +99,7 @@ const PatientBilling = () => {
 
   const formatStripeAmount = (amountMinor, currency = "inr") => {
     const major = (amountMinor || 0) / 100; // paise -> ₹
-    const upper = currency.toUpperCase();
+    const upper = currency?.toUpperCase?.() || "INR";
     if (upper === "INR") return `₹${major.toFixed(2)}`;
     return `${upper} ${major.toFixed(2)}`;
   };
@@ -118,10 +119,7 @@ const PatientBilling = () => {
           label="Total paid for appointments"
           value={`₹${summary.totalPaid}`}
         />
-        <SummaryCard
-          label="Paid appointments"
-          value={summary.totalCount}
-        />
+        <SummaryCard label="Paid appointments" value={summary.totalCount} />
         <SummaryCard
           label="Total credits purchased"
           value={`${creditSummary.totalCredits} credits (${formatStripeAmount(
@@ -130,14 +128,12 @@ const PatientBilling = () => {
         />
       </div>
 
-      {/* APPOINTMENT PAYMENT TABLE (old section) */}
+      {/* APPOINTMENT PAYMENT TABLE */}
       <div className="bg-white rounded-xl shadow p-4 space-y-3">
         <h2 className="text-lg font-medium">Appointment payments</h2>
 
         {payments.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No paid appointments yet.
-          </p>
+          <p className="text-sm text-gray-500">No paid appointments yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
@@ -181,23 +177,17 @@ const PatientBilling = () => {
                       <td className="py-2 pr-4">
                         {appt.date} {appt.time && `at ${appt.time}`}
                       </td>
-                      <td className="py-2 pr-4 font-semibold">
-                        ₹{amount}
-                      </td>
+                      <td className="py-2 pr-4 font-semibold">₹{amount}</td>
                       <td className="py-2 pr-4">
                         <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">
-                          {appt.paymentStatus
-                            ? appt.paymentStatus
-                            : appt.status}
+                          {appt.paymentStatus ? appt.paymentStatus : appt.status}
                         </span>
                       </td>
                       <td className="py-2 pr-4 text-xs text-gray-600">
                         {paymentId}
                       </td>
                       <td className="py-2 pr-4 text-xs text-gray-600">
-                        {paidAt
-                          ? new Date(paidAt).toLocaleString()
-                          : "-"}
+                        {paidAt ? new Date(paidAt).toLocaleString() : "-"}
                       </td>
                     </tr>
                   );

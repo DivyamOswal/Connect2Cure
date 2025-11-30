@@ -77,7 +77,7 @@ app.use(
 app.use(morgan("dev"));
 
 /**
- * ⚠️ IMPORTANT: Stripe Webhook route with RAW body
+ * ⚠️ Stripe Webhook route with RAW body
  * This MUST come BEFORE express.json() so Stripe signature verification works.
  * In Stripe dashboard, set endpoint as: https://your-backend.com/api/billing/webhook
  */
@@ -87,7 +87,7 @@ app.post(
   handleStripeWebhook
 );
 
-// After webhook is defined, you can safely parse JSON for all other routes
+// After webhook is defined, parse JSON for all other routes
 app.use(express.json());
 app.use(cookieParser());
 

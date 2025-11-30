@@ -34,9 +34,7 @@ export const createCheckoutSession = async (req, res) => {
     log("👉 Plan config =", plan);
 
     if (!plan || !plan.stripePriceId) {
-      return res
-        .status(400)
-        .json({ message: "Invalid plan selected" });
+      return res.status(400).json({ message: "Invalid plan selected" });
     }
 
     const user = await User.findById(req.user.userId);
@@ -46,7 +44,9 @@ export const createCheckoutSession = async (req, res) => {
 
     const clientUrl =
       process.env.CLIENT_URL ||
-      (isProd ? "https://your-production-frontend.com" : "http://localhost:5173");
+      (isProd
+        ? "https://your-production-frontend.com"
+        : "http://localhost:5173");
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -77,8 +77,7 @@ export const createCheckoutSession = async (req, res) => {
   }
 };
 
-// OPTIONAL: confirm credits by sessionId (client-side call)
-// In production, prefer the webhook below.
+// confirm credits by sessionId (client-side call)
 export const confirmCredits = async (req, res) => {
   try {
     const { sessionId } = req.body;
@@ -138,7 +137,7 @@ const applyCreditsAndLogTransaction = async ({
   const amountTotal = session.amount_total ?? 0; // smallest currency unit
   const currency = session.currency ?? "inr";
 
-  // 2) Avoid duplicates (webhook can retry)
+  // 2) Avoid duplicates (webhook/confirm can retry)
   const existing = await BillingTransaction.findOne({
     stripeSessionId: session.id,
   });
@@ -175,7 +174,7 @@ export const handleStripeWebhook = async (req, res) => {
   let event;
 
   try {
-    // req.rawBody must be the raw buffer (see server setup below)
+    // req.body is raw Buffer (because express.raw() is used in app.js)
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error("❌ Webhook signature verification failed:", err.message);

@@ -7,7 +7,7 @@ const API_BASE_URL =
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 // LocalStorage token helpers
@@ -66,23 +66,17 @@ api.interceptors.response.use(
       }
 
       try {
-        // use the same API_BASE_URL so this also works in prod
         const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
           refreshToken,
         });
 
         const newAccessToken = res.data.accessToken;
 
-        // store new token
         localStorage.setItem("accessToken", newAccessToken);
-
-        // update default header for future requests
         api.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
 
-        // resolve queued requests
         processQueue(null, newAccessToken);
 
-        // retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (err) {
