@@ -22,7 +22,7 @@ import billingRoutes from "./routes/billingRoutes.js";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const _dirname = path.dirname(_filename);
 
 const app = express();
 
@@ -36,7 +36,7 @@ app.use((req, res, next) => {
 
 // Log request
 app.use((req, res, next) => {
-  console.log("➡️", req.method, JSON.stringify(req.url));
+  console.log("➡", req.method, JSON.stringify(req.url));
   next();
 });
 
@@ -46,20 +46,29 @@ app.use(cookieParser());
 // 👇 CORS: allow localhost + production origin from env
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.CLIENT_ORIGIN, // e.g. https://yourapp.vercel.app
+  process.env.CLIENT_ORIGIN,
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL,
+  "https://connect2-cure-dedu.vercel.app", // hard-coded fallback
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // allow non-browser / server-to-server (no origin)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+
+      console.log("❌ CORS blocked origin:", origin);
       return callback(new Error("Not allowed by CORS"), false);
     },
     credentials: true,
   })
 );
+
 
 app.use(morgan("dev"));
 
