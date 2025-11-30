@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { connectSocket, socket } from "../../socket";
 import ChatSidebar from "../../components/ChatAndVideo/ChatSidebar";
 import ChatWindow from "../../components/ChatAndVideo/ChatWindow";
+import { connectSocket, socket } from "../../socket";
 
 const ChatPage = () => {
   const navigate = useNavigate();
