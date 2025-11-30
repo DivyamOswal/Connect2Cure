@@ -47,7 +47,9 @@ const baseAllowedOrigins = [
   process.env.CLIENT_ORIGIN,
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
+   "https://connect2-cure.vercel.app", 
   "https://connect2-cure-dedu.vercel.app", // main prod
+
 ].filter(Boolean);
 
 // matches e.g. https://connect2-cure-dedu-6zpzbtwb0-divyamoswals-projects.vercel.app
