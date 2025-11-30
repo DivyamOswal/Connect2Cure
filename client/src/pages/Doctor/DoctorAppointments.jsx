@@ -53,7 +53,7 @@ const DoctorAppointments = () => {
           return;
         }
 
-        const res = await fetch(`${API_BASE}/api/appointments/doctor`, {
+        const res = await fetch(`${API_BASE}/appointments/doctor`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
