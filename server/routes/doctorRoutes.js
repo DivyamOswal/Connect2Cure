@@ -3,7 +3,7 @@ import express from "express";
 import DoctorProfile from "../models/DoctorProfile.js";
 import { auth } from "../middleware/auth.js";
 import { getDoctorEarnings } from "../controllers/appointmentController.js";
-import { getDoctorSummary } from "../controllers/dashboardController.js"; // 👈 add this
+import { getDoctorSummary } from "../controllers/dashboardController.js";
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.get("/earnings", auth(["doctor"]), getDoctorEarnings);
 
 /**
  * GET /api/doctors/dashboard
- * Doctor dashboard summary (legacy / alternate route)
+ * Doctor dashboard summary (used by some parts of frontend)
  *
  * IMPORTANT: This must also be BEFORE `/:id`
  */

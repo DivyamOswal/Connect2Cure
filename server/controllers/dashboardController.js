@@ -12,13 +12,25 @@ const getTodayString = () => {
 // /doctor/summary
 export const getDoctorSummary = async (req, res) => {
   try {
+    // 🔍 Log basic info
+    console.log("getDoctorSummary HIT");
+    console.log("req.user:", req.user);
+
+    if (!req.user || !req.user.userId) {
+      console.error("getDoctorSummary: missing req.user.userId");
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     const userId = req.user.userId;
 
     const profile = await DoctorProfile.findOne({ user: userId })
       .select("_id")
       .lean();
 
+    console.log("DoctorProfile for user:", userId, "=>", profile);
+
     if (!profile) {
+      console.warn("No doctor profile found, returning empty stats");
       return res.json({
         stats: {
           totalAppointments: 0,
@@ -48,6 +60,10 @@ export const getDoctorSummary = async (req, res) => {
       status: statusMatch,
     };
 
+    console.log("baseMatch:", baseMatch);
+    console.log("upcomingMatch:", upcomingMatch);
+    console.log("todayMatch:", todayMatch);
+
     const [
       totalAppointments,
       upcomingAppointments,
@@ -62,12 +78,18 @@ export const getDoctorSummary = async (req, res) => {
       Appointment.find(baseMatch)
         .sort({ date: 1, time: 1 })
         .limit(20)
-        // ✅ only populate patientUser (this exists in schema)
         .populate({ path: "patientUser", select: "name email" })
         .lean(),
     ]);
 
-    // If your frontend expects a `patient` field, normalize it here
+    console.log("Counts:", {
+      totalAppointments,
+      upcomingAppointments,
+      todayAppointments,
+      unreadMessages,
+      recentCount: rawRecentAppointments.length,
+    });
+
     const recentAppointments = rawRecentAppointments.map((appt) => ({
       ...appt,
       patient: appt.patientUser || null,
@@ -83,11 +105,10 @@ export const getDoctorSummary = async (req, res) => {
       recentAppointments,
     });
   } catch (err) {
-    console.error("getDoctorSummary error:", err);
+    console.error("getDoctorSummary error stack:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 // /patient/summary
 export const getPatientSummary = async (req, res) => {
   try {
