@@ -3,6 +3,7 @@ import express from "express";
 import DoctorProfile from "../models/DoctorProfile.js";
 import { auth } from "../middleware/auth.js";
 import { getDoctorEarnings } from "../controllers/appointmentController.js";
+import { getDoctorSummary } from "../controllers/dashboardController.js"; // 👈 add this
 
 const router = express.Router();
 
@@ -27,6 +28,14 @@ router.get("/", async (req, res) => {
  * IMPORTANT: This must be BEFORE `/:id`
  */
 router.get("/earnings", auth(["doctor"]), getDoctorEarnings);
+
+/**
+ * GET /api/doctors/dashboard
+ * Doctor dashboard summary (legacy / alternate route)
+ *
+ * IMPORTANT: This must also be BEFORE `/:id`
+ */
+router.get("/dashboard", auth(["doctor"]), getDoctorSummary);
 
 /**
  * GET /api/doctors/:id
