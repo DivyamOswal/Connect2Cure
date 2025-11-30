@@ -92,9 +92,10 @@ const PatientDoctor = () => {
             const lastVisitDate = new Date(lastAppointment);
 
             // Build image URL if you store relative path on doctor.image
-            const imgSrc = doctor.image
-              ? `http://localhost:5000${doctor.image}`
-              : null;
+            const BACKEND =
+              import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:5000";
+
+            const imgSrc = doctor.image ? `${BACKEND}${doctor.image}` : null;
 
             return (
               <div
@@ -160,9 +161,7 @@ const PatientDoctor = () => {
                     {doctor.rating !== undefined && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
                         ⭐ {doctor.rating ?? "-"}{" "}
-                        {doctor.reviews
-                          ? `(${doctor.reviews} reviews)`
-                          : ""}
+                        {doctor.reviews ? `(${doctor.reviews} reviews)` : ""}
                       </span>
                     )}
                     <span className="inline-flex px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">

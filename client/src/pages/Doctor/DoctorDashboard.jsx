@@ -40,12 +40,12 @@ const DoctorDashboard = () => {
           return;
         }
 
-        const res = await fetch(
-          "http://localhost:5000/api/dashboard/doctor/summary",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const API_BASE =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+        const res = await fetch(`${API_BASE}/dashboard/doctor/summary`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const data = await res.json();
 
@@ -74,52 +74,51 @@ const DoctorDashboard = () => {
 
   // ---------- APPROVE APPOINTMENT ----------
   const approveAppointment = async (id) => {
-  try {
-    setBtnLoading(id);
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      window.location.href = "/login/doctor";
-      return;
-    }
+    try {
+      setBtnLoading(id);
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        window.location.href = "/login/doctor";
+        return;
+      }
 
-    const res = await fetch(
-      `http://localhost:5000/api/appointments/${id}/confirm`,
-      {
+      const API_BASE =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+      const res = await fetch(`${API_BASE}/appointments/${id}/confirm`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+      });
+
+      const data = await res.json();
+
+      if (res.status === 401) {
+        localStorage.clear();
+        window.location.href = "/login/doctor";
+        return;
       }
-    );
 
-    const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "Failed to approve");
+        return;
+      }
 
-    if (res.status === 401) {
-      localStorage.clear();
-      window.location.href = "/login/doctor";
-      return;
+      // ✅ update that one appointment’s status using backend value
+      setRecent((prev) =>
+        prev.map((a) =>
+          a._id === id ? { ...a, status: data.appointment.status } : a
+        )
+      );
+    } catch (err) {
+      console.error("Approve error:", err);
+      alert("Failed to approve appointment");
+    } finally {
+      setBtnLoading("");
     }
-
-    if (!res.ok) {
-      alert(data.message || "Failed to approve");
-      return;
-    }
-
-    // ✅ update that one appointment’s status using backend value
-    setRecent((prev) =>
-      prev.map((a) =>
-        a._id === id ? { ...a, status: data.appointment.status } : a
-      )
-    );
-  } catch (err) {
-    console.error("Approve error:", err);
-    alert("Failed to approve appointment");
-  } finally {
-    setBtnLoading("");
-  }
-};
-
+  };
 
   if (loading) return <p className="text-gray-500">Loading dashboard...</p>;
 
@@ -136,10 +135,22 @@ const DoctorDashboard = () => {
 
       {/* Stats cards */}
       <div className="grid gap-4 mb-6 md:grid-cols-4 sm:grid-cols-2">
-        <DashboardCard label="Total appointments" value={stats?.totalAppointments ?? 0} />
-        <DashboardCard label="Upcoming appointments" value={stats?.upcomingAppointments ?? 0} />
-        <DashboardCard label="Today's appointments" value={stats?.todayAppointments ?? 0} />
-        <DashboardCard label="Unread messages" value={stats?.unreadMessages ?? 0} />
+        <DashboardCard
+          label="Total appointments"
+          value={stats?.totalAppointments ?? 0}
+        />
+        <DashboardCard
+          label="Upcoming appointments"
+          value={stats?.upcomingAppointments ?? 0}
+        />
+        <DashboardCard
+          label="Today's appointments"
+          value={stats?.todayAppointments ?? 0}
+        />
+        <DashboardCard
+          label="Unread messages"
+          value={stats?.unreadMessages ?? 0}
+        />
       </div>
 
       {/* Recent appointments */}
@@ -164,11 +175,17 @@ const DoctorDashboard = () => {
                 const patient = appt.patient || appt.patientUser || {};
                 return (
                   <tr key={appt._id} className="border-b last:border-b-0">
-                    <td className="py-2">{patient?.name || "Unknown patient"}</td>
+                    <td className="py-2">
+                      {patient?.name || "Unknown patient"}
+                    </td>
 
-                    <td className="py-2 text-gray-500">{patient?.email || "-"}</td>
+                    <td className="py-2 text-gray-500">
+                      {patient?.email || "-"}
+                    </td>
 
-                    <td className="py-2">{formatDateTime(appt.date, appt.time)}</td>
+                    <td className="py-2">
+                      {formatDateTime(appt.date, appt.time)}
+                    </td>
 
                     <td className="py-2 capitalize">
                       {appt.status === "pending" ? (
@@ -185,7 +202,9 @@ const DoctorDashboard = () => {
                           {btnLoading === appt._id ? "Approving..." : "Approve"}
                         </button>
                       ) : (
-                        <span className="text-green-600 font-medium">Confirmed</span>
+                        <span className="text-green-600 font-medium">
+                          Confirmed
+                        </span>
                       )}
                     </td>
                   </tr>

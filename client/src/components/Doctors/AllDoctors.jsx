@@ -4,9 +4,12 @@ import { Link } from "react-router-dom";
 import api from "../../api/axios";
 
 const getDoctorImageUrl = (imagePath) => {
-  if (!imagePath) return null; // don't render <img src="">
-  return `http://localhost:5000${imagePath}`;
+  if (!imagePath) return null;
+
+  const backend = import.meta.env.VITE_BACKEND_ORIGIN; 
+  return `${backend}${imagePath}`;
 };
+
 
 const AllDoctors = () => {
   const [doctors, setDoctors] = useState([]);

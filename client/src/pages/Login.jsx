@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 
+// API base URL (works locally + on Vercel)
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 const Login = () => {
   const location = useLocation();
 
@@ -28,6 +32,26 @@ const Login = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Common redirect logic after successful login
+  const handlePostLoginRedirect = (user) => {
+    // redirect to onboarding if incomplete
+    if (!user.onboardingCompleted) {
+      if (user.role === "patient") {
+        window.location.href = "/onboarding/patient";
+      } else if (user.role === "doctor") {
+        window.location.href = "/onboarding/doctor";
+      }
+      return;
+    }
+
+    // redirect to dashboards after onboarding
+    if (user.role === "doctor") {
+      window.location.href = "/dashboard/doctor";
+    } else {
+      window.location.href = "/patient/dashboard";
+    }
+  };
+
   // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,17 +59,17 @@ const Login = () => {
     setError("");
 
     try {
-      
+      // -------------------------------
       // LOGIN FLOW
-    
+      // -------------------------------
       if (state === "login") {
-        const res = await fetch("http://localhost:5000/api/auth/login", {
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
-            role, 
+            role,
           }),
         });
 
@@ -56,49 +80,30 @@ const Login = () => {
         localStorage.setItem("refreshToken", data.refreshToken);
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // redirect to onboarding if incomplete
-        if (!data.user.onboardingCompleted) {
-          if (data.user.role === "patient") {
-            window.location.href = "/onboarding/patient";
-          } else if (data.user.role === "doctor") {
-            window.location.href = "/onboarding/doctor";
-          }
-          return;
-        }
-
-        // redirect to dashboards after onboarding
-        if (data.user.role === "doctor") {
-          window.location.href = "/dashboard/doctor";
-        } else {
-          window.location.href = "/patient/dashboard";
-        }
-
+        handlePostLoginRedirect(data.user);
         return;
       }
 
       // -------------------------------
       // REGISTER FLOW
       // -------------------------------
-      const registerRes = await fetch(
-        "http://localhost:5000/api/auth/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-            role, // store role on register
-          }),
-        }
-      );
+      const registerRes = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role, // store role on register
+        }),
+      });
 
       const regData = await registerRes.json();
       if (!registerRes.ok)
         throw new Error(regData.message || "Registration failed");
 
       // Auto-login after register
-      const loginRes = await fetch("http://localhost:5000/api/auth/login", {
+      const loginRes = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -116,7 +121,7 @@ const Login = () => {
       localStorage.setItem("refreshToken", loginData.refreshToken);
       localStorage.setItem("user", JSON.stringify(loginData.user));
 
-      // redirect to onboarding
+      // redirect to onboarding after signup
       if (loginData.user.role === "patient") {
         window.location.href = "/onboarding/patient";
       } else {

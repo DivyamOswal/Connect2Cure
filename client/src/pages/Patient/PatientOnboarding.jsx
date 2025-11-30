@@ -21,7 +21,10 @@ const PatientOnboarding = () => {
     setMessage("");
 
     const accessToken = localStorage.getItem("accessToken");
-    const res = await fetch("http://localhost:5000/api/onboarding/patient", {
+    const API_BASE =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+    const res = await fetch(`${API_BASE}/onboarding/patient`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

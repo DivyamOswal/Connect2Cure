@@ -44,7 +44,10 @@ const Profile = () => {
           return;
         }
 
-        const res = await fetch("http://localhost:5000/api/profile/me", {
+        const API_BASE_URL =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+        const res = await fetch(`${API_BASE_URL}/profile/me`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
@@ -78,8 +81,7 @@ const Profile = () => {
             phone: data.profile.phone || "",
             specialization: data.profile.specialization || "",
             licenseNumber: data.profile.licenseNumber || "",
-            yearsOfExperience:
-              data.profile.yearsOfExperience?.toString() || "",
+            yearsOfExperience: data.profile.yearsOfExperience?.toString() || "",
             clinicName: data.profile.clinicName || "",
             clinicAddress: data.profile.clinicAddress || "",
           });
@@ -147,7 +149,10 @@ const Profile = () => {
         };
       }
 
-      const res = await fetch("http://localhost:5000/api/profile/me", {
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+      const res = await fetch(`${API_BASE_URL}/profile/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -212,15 +217,16 @@ const Profile = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-5 rounded-xl shadow">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 bg-white p-5 rounded-xl shadow"
+      >
         {/* Basic info */}
         <div>
           <h3 className="text-lg font-medium mb-3">Basic information</h3>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">
-                Name
-              </label>
+              <label className="block text-sm text-gray-600 mb-1">Name</label>
               <input
                 name="name"
                 value={basic.name}
@@ -230,9 +236,7 @@ const Profile = () => {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">
-                Email
-              </label>
+              <label className="block text-sm text-gray-600 mb-1">Email</label>
               <input
                 name="email"
                 type="email"

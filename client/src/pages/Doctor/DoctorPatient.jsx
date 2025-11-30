@@ -1,7 +1,8 @@
 // src/pages/Doctor/DoctorPatient.jsx
 import React, { useEffect, useState } from "react";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const DoctorPatient = () => {
   const [patients, setPatients] = useState([]);
@@ -57,9 +58,7 @@ const DoctorPatient = () => {
 
           existing.totalAppointments += 1;
 
-          const apptDateTime = new Date(
-            `${appt.date}T${appt.time || "00:00"}`
-          );
+          const apptDateTime = new Date(`${appt.date}T${appt.time || "00:00"}`);
           if (
             !existing.lastAppointment ||
             apptDateTime > existing.lastAppointment
@@ -135,9 +134,7 @@ const DoctorPatient = () => {
                     Last appointment:{" "}
                   </span>
                   <span className="text-gray-800">
-                    {lastAppointment
-                      ? lastAppointment.toLocaleString()
-                      : "—"}
+                    {lastAppointment ? lastAppointment.toLocaleString() : "—"}
                   </span>
                 </p>
               </div>

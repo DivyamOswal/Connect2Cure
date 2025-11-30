@@ -54,11 +54,15 @@ const ChatPage = () => {
   useEffect(() => {
     if (!token) return;
 
+    const API_BASE_URL =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
     const fetchThreads = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/messages/threads", {
+        const res = await fetch(`${API_BASE_URL}/messages/threads`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         const data = await res.json();
         setThreads(data);
 
@@ -74,15 +78,20 @@ const ChatPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
   const handleSelectUser = async (user) => {
     setSelectedUser(user);
+
     try {
       const res = await fetch(
-        `http://localhost:5000/api/messages/conversation/${user._id}`,
+        `${API_BASE_URL}/messages/conversation/${user._id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+
       const data = await res.json();
       setMessages(data);
     } catch (err) {
@@ -95,15 +104,19 @@ const ChatPage = () => {
 
     let attachment = null;
 
+    const API_BASE_URL =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
     try {
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
 
-        const res = await fetch("http://localhost:5000/api/messages/upload", {
+        const res = await fetch(`${API_BASE_URL}/messages/upload`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
+            // don't set Content-Type with FormData
           },
           body: formData,
         });
@@ -112,7 +125,7 @@ const ChatPage = () => {
         if (!res.ok) {
           console.error("Upload failed:", data.message);
         } else {
-          attachment = data.attachment;
+          attachment = data.attachment; // { url, filename, ... }
         }
       }
 

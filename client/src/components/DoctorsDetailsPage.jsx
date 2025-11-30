@@ -4,8 +4,10 @@ import api from "../api/axios";
 
 const getDoctorImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  return `http://localhost:5000${imagePath}`;
+  const origin = import.meta.env.VITE_BACKEND_ORIGIN;
+  return `${origin}${imagePath}`;
 };
+
 
 const BookingModal = ({ doctor, onClose }) => {
   const [form, setForm] = useState({ name: "", phone: "", date: "", time: "" });

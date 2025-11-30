@@ -10,9 +10,12 @@ import api from "../../api/axios";
 
 // Helper to turn /uploads/... into full URL
 const getDoctorImageUrl = (imagePath) => {
-  if (!imagePath) return null; // don't render <img src="">
-  return `http://localhost:5000${imagePath}`;
+  if (!imagePath) return null;
+
+  const backendOrigin = import.meta.env.VITE_BACKEND_ORIGIN;
+  return `${backendOrigin}${imagePath}`;
 };
+
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
