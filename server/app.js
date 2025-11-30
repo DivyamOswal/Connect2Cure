@@ -50,6 +50,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
   "https://connect2-cure-dedu.vercel.app", // hard-coded fallback
+   "https://connect2-cure-dedu-f47xtsfs4-divyamoswals-projects.vercel.app",
 ].filter(Boolean);
 
 app.use(
