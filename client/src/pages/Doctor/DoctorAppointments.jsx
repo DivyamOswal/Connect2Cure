@@ -4,14 +4,12 @@ import React, { useEffect, useState } from "react";
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-
 const formatDateTime = (date, time) => {
   if (!date && !time) return "-";
   if (!date) return time;
   if (!time) return date;
 
   try {
-    // If time is "HH:mm", make it "HH:mm:00"
     let normalizedTime = time;
     if (time.length === 5) {
       normalizedTime = `${time}:00`;
@@ -44,6 +42,47 @@ const DoctorAppointments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // ✅ add this function INSIDE the component
+  const confirmAppointment = async (id) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        window.location.href = "/login/doctor";
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/appointments/${id}/confirm`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (res.status === 401) {
+        localStorage.clear();
+        window.location.href = "/login/doctor";
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to confirm appointment");
+      }
+
+      // update the local state so UI reflects the change
+      setAppointments((prev) =>
+        prev.map((appt) =>
+          appt._id === id ? { ...appt, status: "confirmed" } : appt
+        )
+      );
+    } catch (err) {
+      console.error("CONFIRM APPOINTMENT ERROR:", err);
+      alert(err.message || "Failed to confirm appointment");
+    }
+  };
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -54,9 +93,7 @@ const DoctorAppointments = () => {
         }
 
         const res = await fetch(`${API_BASE}/appointments/doctor`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = await res.json();
@@ -148,7 +185,7 @@ const DoctorAppointments = () => {
                   </p>
                 </div>
 
-                {/* Payment info (no Stripe IDs) */}
+                {/* Payment info */}
                 <div className="text-xs text-gray-500 space-y-1 border-t pt-2 mt-1">
                   <p>
                     <span className="font-medium text-gray-600">
@@ -162,20 +199,32 @@ const DoctorAppointments = () => {
                   </p>
                 </div>
 
-                {/* Meta info */}
-                <div className="text-[11px] text-gray-400 border-t pt-2 mt-1">
-                  <p>
-                    Booked on:{" "}
-                    {appt.createdAt
-                      ? new Date(appt.createdAt).toLocaleString()
-                      : "-"}
-                  </p>
-                  {appt.updatedAt && (
-                    <p>
-                      Last updated:{" "}
-                      {new Date(appt.updatedAt).toLocaleString()}
-                    </p>
+                {/* Actions + Meta info */}
+                <div className="mt-2 border-t pt-2 space-y-2">
+                  {/* ✅ Confirm button for pending appointments */}
+                  {appt.status === "pending" && (
+                    <button
+                      onClick={() => confirmAppointment(appt._id)}
+                      className="text-xs px-3 py-1 rounded-full bg-green-600 text-white hover:bg-green-700 transition-colors"
+                    >
+                      Confirm appointment
+                    </button>
                   )}
+
+                  <div className="text-[11px] text-gray-400">
+                    <p>
+                      Booked on:{" "}
+                      {appt.createdAt
+                        ? new Date(appt.createdAt).toLocaleString()
+                        : "-"}
+                    </p>
+                    {appt.updatedAt && (
+                      <p>
+                        Last updated:{" "}
+                        {new Date(appt.updatedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             );

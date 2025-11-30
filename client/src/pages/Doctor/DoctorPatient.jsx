@@ -18,13 +18,10 @@ const DoctorPatient = () => {
           return;
         }
 
-        // 👇 IMPORTANT: use the DOCTOR endpoint, NOT /api/appointments/my
+        // DoctorPatient.jsx
         const res = await fetch(`${API_BASE}/appointments/doctor`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
         const data = await res.json();
 
         if (res.status === 401) {
