@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { socket, connectSocket } from "../../socket";
+import socket from "../../socket";
+
 
 const VideoCallPage = () => {
   const { otherUserId } = useParams(); // /video-call/:otherUserId
@@ -19,7 +20,7 @@ const VideoCallPage = () => {
       return;
     }
 
-    connectSocket(token);
+  
 
     // Prepare RTCPeerConnection
     pcRef.current = new RTCPeerConnection({
