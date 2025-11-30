@@ -1,11 +1,13 @@
 // client/src/api/axios.js
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api";
+// Use env var in prod, fallback to localhost for dev
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  // withCredentials: true, // only if you also use cookies – not needed for pure JWT
+  // withCredentials: true, // uncomment if you use cookies
 });
 
 // LocalStorage token helpers
@@ -64,6 +66,7 @@ api.interceptors.response.use(
       }
 
       try {
+        // use the same API_BASE_URL so this also works in prod
         const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
           refreshToken,
         });

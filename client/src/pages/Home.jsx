@@ -6,7 +6,7 @@ import AboutSystem from '../components/Home/AboutSytem'
 import Dashboard from '../components/Home/Dashboard'
 import Benefits from '../components/Home/Benefits'
 import Doctors from '../components/Home/Doctors'
-import GetStarted from '../components/Home/getStarted'
+import GetStarted from '../components/Home/GetStarted'
 
 const Home = () => {
    useEffect(()=>{
