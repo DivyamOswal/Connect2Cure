@@ -1,4 +1,4 @@
-// server/server.js
+// server/index.js
 import http from "http";
 import { Server } from "socket.io";
 import app from "./app.js";
@@ -9,15 +9,12 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
 /**
- * 🔌 Socket.IO with VERY PERMISSIVE CORS
- * - Allows ANY Origin
+ * 🔌 Socket.IO with permissive CORS
+ * origin: true = reflect the request origin
  */
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      // allow any origin (including all connect2-cure*.vercel.app)
-      callback(null, true);
-    },
+    origin: true,           // reflect Origin header
     credentials: true,
     methods: ["GET", "POST"],
   },
@@ -26,10 +23,9 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("✅ Socket connected:", socket.id);
 
-  // Example: auth event you mentioned in client
   socket.on("authenticate", (token) => {
     console.log("Socket authenticate token:", token?.slice(0, 10) + "...");
-    // TODO: verify token if you want
+    // TODO: verify token if needed
   });
 
   socket.on("disconnect", () => {
@@ -37,8 +33,18 @@ io.on("connection", (socket) => {
   });
 });
 
-// Export io if you need it elsewhere
-export { io };
+// (Optional) simple debug route to confirm which process is running
+app.get("/cors-debug", (req, res) => {
+  res.json({
+    ok: true,
+    origin: req.headers.origin || null,
+    corsHeaders: {
+      "Access-Control-Allow-Origin": res.getHeader("Access-Control-Allow-Origin") || null,
+      "Access-Control-Allow-Credentials":
+        res.getHeader("Access-Control-Allow-Credentials") || null,
+    },
+  });
+});
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
