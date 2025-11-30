@@ -2,12 +2,17 @@
 import Message from "../models/Message.js";
 import Appointment from "../models/Appointment.js";
 
-// build contact list from appointments
+/**
+ * GET /api/messages/threads
+ * Build contact list based on appointments
+ * + attach last message (from Message collection)
+ */
 export const getThreads = async (req, res) => {
   try {
     const myId = req.user.userId;
     const myRole = req.user.role;
 
+    // 1) Find all active appointments for this user
     let apptMatch = {
       status: { $in: ["pending", "confirmed"] },
     };
@@ -25,8 +30,9 @@ export const getThreads = async (req, res) => {
       .populate("patientUser", "name email role")
       .lean();
 
-    const contactMap = new Map();
+    const contactMap = new Map(); // otherUserId -> { user, lastMessage }
 
+    // 2) Build contact list from appointments
     for (const appt of appts) {
       const otherUser =
         String(appt.doctorUser._id) === String(myId)
@@ -50,13 +56,14 @@ export const getThreads = async (req, res) => {
     const otherIds = [...contactMap.keys()];
     if (otherIds.length === 0) return res.json([]);
 
+    // 3) For those contacts, find latest Message between me and each of them
     const msgs = await Message.find({
       $or: [
         { sender: myId, receiver: { $in: otherIds } },
         { sender: { $in: otherIds }, receiver: myId },
       ],
     })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 }) // newest first
       .lean();
 
     for (const msg of msgs) {
@@ -70,14 +77,17 @@ export const getThreads = async (req, res) => {
       }
     }
 
-    res.json([...contactMap.values()]);
+    return res.json([...contactMap.values()]);
   } catch (err) {
     console.error("getThreads error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-// full conversation between me and other user
+/**
+ * GET /api/messages/conversation/:userId
+ * Full conversation between me and other user
+ */
 export const getConversation = async (req, res) => {
   try {
     const myId = req.user.userId;
@@ -89,35 +99,73 @@ export const getConversation = async (req, res) => {
         { sender: otherId, receiver: myId },
       ],
     })
-      .sort({ createdAt: 1 })
+      .sort({ createdAt: 1 }) // oldest → newest
       .lean();
 
-    res.json(messages);
+    return res.json(messages);
   } catch (err) {
     console.error("getConversation error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
-// optional REST send (socket already saves, but this is handy for testing)
+/**
+ * POST /api/messages/send   (optional helper; sockets already save messages)
+ * JSON: { receiver, text, attachment }  // attachment optional
+ */
 export const sendMessage = async (req, res) => {
   try {
     const sender = req.user.userId;
-    const { receiver, text } = req.body;
+    const { receiver, text, attachment } = req.body;
 
-    if (!receiver || !text?.trim()) {
+    if (!receiver || (!text?.trim() && !attachment)) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
     const message = await Message.create({
       sender,
       receiver,
-      text: text.trim(),
+      text: text?.trim() || "",
+      attachment: attachment || undefined,
     });
 
-    res.json(message);
+    return res.json(message);
   } catch (err) {
     console.error("sendMessage error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * POST /api/messages/upload
+ * Multipart form-data: file
+ * Uses multer middleware to populate req.file
+ */
+export const uploadAttachment = async (req, res) => {
+  try{
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const file = req.file;
+
+    // Adjust SERVER_URL depending on your setup
+    const baseUrl =
+      process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+    const url = `${baseUrl}/uploads/${file.filename}`;
+
+    return res.json({
+      attachment: {
+        url,
+        filename: file.filename,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+      },
+    });
+  } catch (err) {
+    console.error("uploadAttachment error:", err);
+    return res.status(500).json({ message: "Upload failed" });
   }
 };

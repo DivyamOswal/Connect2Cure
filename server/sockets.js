@@ -1,54 +1,56 @@
-// server/sockets.js
 import jwt from "jsonwebtoken";
 import Message from "./models/Message.js";
 
-const onlineUsers = new Map(); // userId -> socketId
+const onlineUsers = new Map(); // userId → socketId
 
 export default function registerSockets(io) {
   io.on("connection", (socket) => {
-    console.log("🔌 New connection:", socket.id);
+    console.log("🔌 Socket connected:", socket.id);
 
     socket.on("authenticate", (token) => {
       try {
         const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-        socket.user = { id: decoded.userId, role: decoded.role };
+        socket.user = { id: decoded.userId };
+
         onlineUsers.set(decoded.userId, socket.id);
-        console.log("🟢 Authenticated socket for user:", decoded.userId);
+        console.log("🟢 Socket authenticated:", decoded.userId);
       } catch (err) {
-        console.error("Socket auth error:", err);
+        console.error("❌ Socket auth failed");
         socket.disconnect();
       }
     });
 
-    // ---------- CHAT: SEND MESSAGE (text + optional attachment) ----------
+    // ============================
+    // SEND MESSAGE (text + file)
+    // ============================
     socket.on("send-message", async ({ receiverId, text, attachment }) => {
       try {
-        if (!socket.user) return;
-        if (!receiverId) return;
-        if (!text?.trim() && !attachment) return; // avoid empty message
+        if (!socket.user || !receiverId) return;
 
-        const msg = await Message.create({
+        // Save permanently in MongoDB
+        const saved = await Message.create({
           sender: socket.user.id,
           receiver: receiverId,
-          text: text?.trim() || "",
-          attachment: attachment || undefined,
+          text: text || "",
+          attachment: attachment || null,
         });
 
-        socket.emit("message-sent", msg);
+        // SEND TO SENDER
+        socket.emit("message-sent", saved);
 
-        const receiverSocket = onlineUsers.get(receiverId);
-        if (receiverSocket) {
-          io.to(receiverSocket).emit("receive-message", msg);
+        // SEND TO RECEIVER IF ONLINE
+        const recSocket = onlineUsers.get(receiverId);
+        if (recSocket) {
+          io.to(recSocket).emit("receive-message", saved);
         }
       } catch (err) {
-        console.error("send-message error:", err);
+        console.error("💥 send-message error:", err);
       }
     });
 
     socket.on("disconnect", () => {
       if (socket.user) {
         onlineUsers.delete(socket.user.id);
-        console.log("🔴 Disconnected:", socket.user.id);
       }
     });
   });

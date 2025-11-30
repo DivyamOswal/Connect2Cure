@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import socket from "../../socket"; // your configured socket.io client
+import socket from "../../socket";
 import ChatSidebar from "../../components/ChatAndVideo/ChatSidebar";
 import ChatWindow from "../../components/ChatAndVideo/ChatWindow";
 
@@ -19,73 +19,30 @@ const ChatPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
 
-  // Redirect if not authenticated + attach socket listeners
+  // Redirect if not authenticated & authenticate socket
   useEffect(() => {
     if (!token) {
       navigate("/login");
       return;
     }
 
-    const handleIncoming = (msg) => {
-      if (!selectedUser || !selectedUser._id || !msg) return;
+    // (re-)authenticate socket with current token
+    socket.emit("authenticate", token);
+  }, [token, navigate]);
 
-      // Try to read sender / receiver from different possible shapes
-      const senderId =
-        msg.sender?._id ||
-        msg.senderId ||
-        msg.from ||
-        msg.sender ||
-        null;
-
-      const receiverId =
-        msg.receiver?._id ||
-        msg.receiverId ||
-        msg.to ||
-        msg.receiver ||
-        null;
-
-      const selId = String(selectedUser._id);
-
-      const isRelevant =
-        (senderId && String(senderId) === selId) ||
-        (receiverId && String(receiverId) === selId);
-
-      if (!isRelevant) return;
-
-      setMessages((prev) => {
-        // avoid duplicates if server echoes the same message
-        if (msg._id && prev.some((m) => m._id === msg._id)) {
-          return prev;
-        }
-
-        // if we had an optimistic temp message, you could match & replace here
-        return [...prev, msg];
-      });
-    };
-
-    socket.on("receive-message", handleIncoming);
-    socket.on("message-sent", handleIncoming);
-
-    return () => {
-      socket.off("receive-message", handleIncoming);
-      socket.off("message-sent", handleIncoming);
-    };
-  }, [token, selectedUser, navigate]);
-
-  // Load conversation list (threads) on mount
+  // Load threads on mount
   useEffect(() => {
     if (!token) return;
 
-    const fetchThreads = async () => {
+    const loadThreads = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/messages/threads`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         const data = await res.json();
         setThreads(data || []);
 
-        // Auto-select first contact if none selected
+        // auto-select first contact if none selected
         if (data && data.length > 0 && !selectedUser) {
           handleSelectUser(data[0].user);
         }
@@ -94,14 +51,13 @@ const ChatPage = () => {
       }
     };
 
-    fetchThreads();
+    loadThreads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // When selecting a user in the sidebar, load the conversation
   const handleSelectUser = async (user) => {
     if (!user || !user._id) return;
-
     setSelectedUser(user);
 
     try {
@@ -111,7 +67,6 @@ const ChatPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       const data = await res.json();
       setMessages(data || []);
     } catch (err) {
@@ -119,62 +74,114 @@ const ChatPage = () => {
     }
   };
 
-  // Send a new message (with optional file)
-  const handleSendMessage = async ({ text, file }) => {
-  if (!selectedUser || (!text?.trim() && !file)) return;
+  // Socket incoming messages
+  useEffect(() => {
+    if (!selectedUser) return;
 
-  let attachment = null;
+    const handleIncoming = (msg) => {
+      if (!msg) return;
 
-  try {
-    // 1) Upload file if provided
-    if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
+      // sender / receiver can be ObjectId or populated doc
+      const senderId = msg.sender?._id || msg.sender;
+      const receiverId = msg.receiver?._id || msg.receiver;
 
-      const res = await fetch(`${API_BASE_URL}/messages/upload`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
+      const selId = String(selectedUser._id);
+      const isRelevant =
+        (senderId && String(senderId) === selId) ||
+        (receiverId && String(receiverId) === selId);
+
+      if (!isRelevant) return;
+
+      setMessages((prev) => {
+        // try to replace optimistic temp message
+        const tempIndex = prev.findIndex(
+          (m) =>
+            m.pending &&
+            m.text === msg.text &&
+            String(m.receiver) === String(receiverId) &&
+            String(m.sender) === String(senderId)
+        );
+
+        if (tempIndex !== -1) {
+          const clone = [...prev];
+          clone[tempIndex] = msg;
+          return clone;
+        }
+
+        // avoid duplicates
+        if (msg._id && prev.some((m) => String(m._id) === String(msg._id))) {
+          return prev;
+        }
+
+        return [...prev, msg];
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        console.error("Upload failed:", data.message);
-      } else {
-        attachment = data.attachment; // { url, originalName, mimeType, ... }
-      }
-    }
-
-    // 2) Optimistically add to UI
-    const tempMsg = {
-      _id: `temp-${Date.now()}`,
-      text: text?.trim() || "",
-      attachment,
-      sender: currentUser?._id || currentUser?.id,
-      receiver: selectedUser._id,
-      createdAt: new Date().toISOString(),
-      pending: true,
     };
 
-    setMessages((prev) => [...prev, tempMsg]);
+    socket.on("message-sent", handleIncoming);
+    socket.on("receive-message", handleIncoming);
 
-    // 3) Emit via socket
-    socket.emit("send-message", {
-      receiverId: selectedUser._id,
-      text: text?.trim() || "",
-      attachment,
-    });
-  } catch (err) {
-    console.error("Failed to send message", err);
-  }
-};
+    return () => {
+      socket.off("message-sent", handleIncoming);
+      socket.off("receive-message", handleIncoming);
+    };
+  }, [selectedUser]);
 
+  // Send a new message (with optional file)
+  const handleSendMessage = async ({ text, file }) => {
+    if (!selectedUser || (!text?.trim() && !file)) return;
+
+    let attachment = null;
+
+    try {
+      // 1) Upload file if provided
+      if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadRes = await fetch(`${API_BASE_URL}/messages/upload`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          console.error("Upload failed:", uploadData.message);
+        } else {
+          attachment = uploadData.attachment; // { url, filename, originalName, mimeType, size }
+        }
+      }
+
+      const cleanText = text?.trim() || "";
+
+      // 2) Optimistic temp message
+      const tempMsg = {
+        _id: `temp-${Date.now()}`,
+        text: cleanText,
+        attachment,
+        sender: currentUser?._id || currentUser?.id,
+        receiver: selectedUser._id,
+        createdAt: new Date().toISOString(),
+        pending: true,
+      };
+
+      setMessages((prev) => [...prev, tempMsg]);
+
+      // 3) Emit via socket (server will save & broadcast)
+      socket.emit("send-message", {
+        receiverId: selectedUser._id,
+        text: cleanText,
+        attachment,
+      });
+    } catch (err) {
+      console.error("Failed to send message", err);
+    }
+  };
 
   const handleStartCall = (otherUserId) => {
     if (!otherUserId) return;
-    // adjust route if your VideoCall route is different
     navigate(`/video-call/${otherUserId}`);
   };
 

@@ -81,6 +81,7 @@ app.use(morgan("dev"));
 // Connect DB
 connectDB();
 
+// ✅ Serve /uploads/* from server/uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/auth", authRoutes);
