@@ -1,5 +1,5 @@
-import AccountForm from "../components/settings/AccountForm";
-import PasswordForm from "../components/settings/PasswordForm";
+import AccountForm from "../components/Settings/AccountForm"
+import AccountForm from "../components/Settings/PasswordForm"
 import { useAuth } from "../context/AuthContext";   
 
 export default function SettingsPage() {
