@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+
 
 // API base URL (works locally + on Vercel)
 const API_BASE_URL =
@@ -7,6 +8,8 @@ const API_BASE_URL =
 
 const Login = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
 
   // Detect role based on URL
   // /login/patient -> "patient"
@@ -34,23 +37,23 @@ const Login = () => {
 
   // Common redirect logic after successful login
   const handlePostLoginRedirect = (user) => {
-    // redirect to onboarding if incomplete
-    if (!user.onboardingCompleted) {
-      if (user.role === "patient") {
-        window.location.href = "/onboarding/patient";
-      } else if (user.role === "doctor") {
-        window.location.href = "/onboarding/doctor";
-      }
-      return;
+  // redirect to onboarding if incomplete
+  if (!user.onboardingCompleted) {
+    if (user.role === "patient") {
+      navigate("/onboarding/patient");
+    } else if (user.role === "doctor") {
+      navigate("/onboarding/doctor");
     }
+    return;
+  }
 
-    // redirect to dashboards after onboarding
-    if (user.role === "doctor") {
-      window.location.href = "/dashboard/doctor";
-    } else {
-      window.location.href = "/patient/dashboard";
-    }
-  };
+ // redirect to onboarding after signup
+if (loginData.user.role === "patient") {
+  navigate("/onboarding/patient");
+} else {
+  navigate("/onboarding/doctor");
+}
+
 
   // Submit form
   const handleSubmit = async (e) => {
