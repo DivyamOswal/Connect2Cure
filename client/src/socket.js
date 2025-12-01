@@ -1,21 +1,15 @@
 // client/src/socket.js
 import { io } from "socket.io-client";
+import { API_BASE_URL } from "./api/axios";
 
-// Detect prod vs dev
+// Detect prod vs dev (Vite flag)
 const isProd = import.meta.env.PROD;
-
-// In dev, default to localhost
-// In prod, default directly to your Render backend if env is not set
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (isProd
-    ? "https://connect2cure-backend.onrender.com/api"
-    : "http://localhost:5000/api");
 
 // If you have a separate socket URL, set VITE_SOCKET_URL.
 // Otherwise derive it from API_BASE_URL by stripping trailing "/api".
 const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL || API_BASE_URL.replace(/\/api\/?$/, "");
+  import.meta.env.VITE_SOCKET_URL ||
+  API_BASE_URL.replace(/\/api\/?$/, "");
 
 console.log("[socket] Connecting to:", SOCKET_URL);
 

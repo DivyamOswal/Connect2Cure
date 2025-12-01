@@ -5,7 +5,7 @@ const isProd = import.meta.env.PROD;
 
 // In dev: default to localhost
 // In prod: default to your Render backend, unless VITE_API_BASE_URL overrides it
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (isProd
     ? "https://connect2cure-backend.onrender.com/api"
@@ -72,7 +72,7 @@ api.interceptors.response.use(
       }
 
       try {
-        // use api.defaults.baseURL so it's always consistent
+        // always use api.defaults.baseURL so it's consistent
         const res = await axios.post(
           `${api.defaults.baseURL}/auth/refresh`,
           { refreshToken }

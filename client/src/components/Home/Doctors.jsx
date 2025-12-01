@@ -1,4 +1,4 @@
-// src/components/Home/Doctors.jsx
+// client/src/components/Home/Doctors.jsx
 import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
@@ -7,15 +7,7 @@ import { Link } from "react-router-dom";
 
 import Title from "../Title";
 import api from "../../api/axios";
-
-// Helper to turn /uploads/... into full URL
-const getDoctorImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-
-  const backendOrigin = import.meta.env.VITE_BACKEND_ORIGIN;
-  return `${backendOrigin}${imagePath}`;
-};
-
+import { getDoctorImageUrl } from "../../utils/imageUrl";
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -59,9 +51,9 @@ const Doctors = () => {
             autoplay={{ delay: 2500, disableOnInteraction: false }}
             loop={doctors.length > 1}
             breakpoints={{
-              640: { slidesPerView: 1 }, // mobile
-              768: { slidesPerView: 2 }, // tablet
-              1024: { slidesPerView: 4 }, // desktop
+              640: { slidesPerView: 1 },
+              768: { slidesPerView: 2 },
+              1024: { slidesPerView: 4 },
             }}
             aria-live="polite"
           >

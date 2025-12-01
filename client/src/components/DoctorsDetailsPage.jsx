@@ -1,13 +1,8 @@
+// client/src/pages/DoctorDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
-
-const getDoctorImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-  const origin = import.meta.env.VITE_BACKEND_ORIGIN;
-  return `${origin}${imagePath}`;
-};
-
+import { getDoctorImageUrl } from "../utils/imageUrl";
 
 const BookingModal = ({ doctor, onClose }) => {
   const [form, setForm] = useState({ name: "", phone: "", date: "", time: "" });
@@ -56,9 +51,7 @@ const BookingModal = ({ doctor, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4">
-      {/* Modal container */}
       <div className="w-full max-w-md sm:max-w-lg md:max-w-2xl bg-white rounded-xl shadow-lg overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b">
           <h3 className="text-base sm:text-lg font-semibold">
             Book Appointment — {doctor.name}
@@ -72,7 +65,6 @@ const BookingModal = ({ doctor, onClose }) => {
           </button>
         </div>
 
-        {/* Body */}
         <form
           onSubmit={handleSubmit}
           className="px-4 py-4 sm:px-6 sm:py-6 space-y-4 overflow-y-auto"
@@ -202,7 +194,6 @@ const DoctorDetail = () => {
   return (
     <div className="min-h-screen bg-[#F3F4F6] py-6 sm:py-10 px-4 sm:px-6 lg:px-8 flex justify-center">
       <div className="bg-white rounded-xl shadow-md w-full max-w-5xl p-4 sm:p-6 md:p-10">
-        {/* Back button */}
         <button
           onClick={() =>
             window.history.length > 2 ? navigate(-1) : navigate("/")
@@ -212,7 +203,6 @@ const DoctorDetail = () => {
           ← Back to {backLabel}
         </button>
 
-        {/* Main content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
           {imgSrc && (
             <div className="w-full">
@@ -288,7 +278,6 @@ const DoctorDetail = () => {
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mt-4">
               <button
                 onClick={() => setOpenBooking(true)}

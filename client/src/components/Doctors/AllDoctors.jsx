@@ -1,15 +1,8 @@
-// src/components/Doctors/AllDoctors.jsx
+// client/src/components/Doctors/AllDoctors.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
-
-const getDoctorImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-
-  const backend = import.meta.env.VITE_BACKEND_ORIGIN; 
-  return `${backend}${imagePath}`;
-};
-
+import { getDoctorImageUrl } from "../../utils/imageUrl";
 
 const AllDoctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -19,7 +12,7 @@ const AllDoctors = () => {
 
     api
       .get("/doctors")
-      .then((res) => setDoctors(res.data))
+      .then((res) => setDoctors(res.data || []))
       .catch((err) => {
         console.error("Failed to load doctors", err);
         setDoctors([]);
