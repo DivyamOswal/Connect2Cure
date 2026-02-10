@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const getUserFromStorage = () => {
   try {
@@ -13,111 +14,70 @@ const getUserFromStorage = () => {
 };
 
 const Navbar = () => {
-  // Generic guest links (you had hotels/villas etc. — replaced with app-appropriate links)
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+
+  // Guest links
   const guestLinks = [
-    { name: "Home", path: "/" },
-    { name: "Find Doctors", path: "/doctors" },
-    { name: "Features", path: "/features" },
-    { name: "About", path: "/about" },
-    { name: "Contact", path: "/contact" },
+    { name: t("home"), path: "/" },
+    { name: t("findDoctors"), path: "/doctors" },
+    { name: t("features"), path: "/features" },
+    { name: t("about"), path: "/about" },
+    { name: t("contact"), path: "/contact" }
   ];
 
-  // Links mapped by role
+  // Patient links
   const patientLinks = [
-    { name: "Dashboard", path: "/patient/dashboard" },
-    { name: "My Doctors", path: "/patient/doctors" },
-    { name: "All Doctors", path: "/doctors" },
-    {name:"My Appointments", path:"dashboard/patient/appointments"},
-    { name: "Chat", path: "/chat" },
-    { name: "VideoCall", path: "/videoCall" },
-    { name: "AI Summary", path: "/patient/summary" },
-    { name: "Billing", path: "/patient/billing" },
-    { name: "Plans", path: "/patient/plans" },
+    { name: t("dashboard"), path: "/patient/dashboard" },
+    { name: t("myDoctors"), path: "/patient/doctors" },
+    { name: t("allDoctors"), path: "/doctors" },
+    { name: t("appointments"), path: "dashboard/patient/appointments" },
+    { name: t("chat"), path: "/chat" },
+    { name: t("videoCall"), path: "/videoCall" },
+    { name: t("aiSummary"), path: "/patient/summary" },
+    { name: t("billing"), path: "/patient/billing" },
+    { name: t("plans"), path: "/patient/plans" }
   ];
 
+  // Doctor links
   const doctorLinks = [
-    { name: "Dashboard", path: "dashboard/doctor" },
-    { name: "My Patients", path: "/dashboard/doctor/patients" },
-    { name: "Appointments", path: "/dashboard/doctor/appointments" },
-    { name: "Chat", path: "/chat" },
-    { name: "Video Call", path: "/videoCall" },
-    { name: "Earnings", path: "dashboard/doctor/earnings" },
+    { name: t("dashboard"), path: "dashboard/doctor" },
+    { name: t("myPatients"), path: "/dashboard/doctor/patients" },
+    { name: t("appointments"), path: "/dashboard/doctor/appointments" },
+    { name: t("chat"), path: "/chat" },
+    { name: t("videoCall"), path: "/videoCall" },
+    { name: t("earnings"), path: "dashboard/doctor/earnings" }
   ];
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState(getUserFromStorage());
-  const navigate = useNavigate();
 
   const firstMenuLinkRef = useRef(null);
   const profileButtonRef = useRef(null);
   const profileMenuRef = useRef(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // lock body scroll when menu is open + focus management + Esc to close
-  useEffect(() => {
-    const body = document.body;
-    if (isMenuOpen) {
-      body.style.overflow = "hidden";
-      setTimeout(() => firstMenuLinkRef.current?.focus(), 50);
-    } else {
-      body.style.overflow = "";
-    }
-
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") {
-        setIsMenuOpen(false);
-        setIsProfileOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      body.style.overflow = "";
-    };
-  }, [isMenuOpen]);
-
-  // close profile dropdown when clicking outside
-  useEffect(() => {
-    const onClick = (e) => {
-      if (
-        profileMenuRef.current &&
-        !profileMenuRef.current.contains(e.target) &&
-        profileButtonRef.current &&
-        !profileButtonRef.current.contains(e.target)
-      ) {
-        setIsProfileOpen(false);
-      }
-    };
-    window.addEventListener("click", onClick);
-    return () => window.removeEventListener("click", onClick);
-  }, []);
-
   const logout = () => {
-    // replace with your logout routine (clear tokens, call API, etc.)
     localStorage.removeItem("user");
     setUser(null);
     setIsProfileOpen(false);
     navigate("/login");
   };
 
-  // Determine links to render
   const navLinks = user
     ? user.role === "doctor"
       ? doctorLinks
       : patientLinks
     : guestLinks;
 
-  // small helper to get first name
   const firstName = (name) => (name ? name.split(" ")[0] : "User");
 
   return (
@@ -127,205 +87,71 @@ const Navbar = () => {
           ? "bg-white/30 backdrop-blur-md text-gray-800 shadow-sm py-2"
           : "bg-[#FF8040] py-3 sm:py-4"
       }`}
-      role="navigation"
-      aria-label="Main navigation"
     >
       {/* Logo */}
-      <Link to={"/"} aria-label="Go to homepage">
-        <h1
-          className={`text-xl sm:text-2xl font-extrabold tracking-wide font-sans ${
-            isScrolled ? "text-black" : "text-white"
-          }`}
-        >
+      <Link to="/">
+        <h1 className={`text-xl sm:text-2xl font-bold ${isScrolled ? "text-black" : "text-white"}`}>
           Connect2Cure
         </h1>
       </Link>
 
-      {/* Desktop Nav (only from lg and above) */}
-      <div
-        className="hidden lg:flex items-center gap-8 font-medium text-base"
-        role="menubar"
-        aria-hidden={isMenuOpen}
-      >
+      {/* Desktop Nav */}
+      <div className="hidden lg:flex items-center gap-8">
         {navLinks.map((link, i) => (
           <Link
             key={i}
             to={link.path}
-            className={`transition-colors duration-300  ${
-              isScrolled
-                ? "text-gray-700 hover:text-black"
-                : "text-white hover:text-black"
-            }`}
-            role="menuitem"
+            className={isScrolled ? "text-gray-700" : "text-white"}
           >
             {link.name}
           </Link>
         ))}
       </div>
 
-      {/* Right Side (Desktop) */}
+      {/* Right side */}
       <div className="hidden lg:flex items-center gap-4">
-        {/* Notifications / Chat quick icons (common for logged-in users) */}
-        {user && (
-          <>
-            <button
-              aria-label="Notifications"
-              className={`p-2 rounded-md transition ${
-                isScrolled
-                  ? "text-gray-700 hover:bg-gray-100"
-                  : "text-white hover:bg-white/10"
-              }`}
-              onClick={() =>
-                navigate(
-                  user.role === "doctor"
-                    ? "/notifications"
-                    : "/patient/notifications"
-                )
-              }
-              title="Notifications"
-            >
-              {/* bell icon */}
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18.6 14.2V11a6 6 0 1 0-12 0v3.2c0 .538-.214 1.055-.595 1.395L4 17h11z" />
-              </svg>
-            </button>
+        {/* 🌐 Language selector */}
+        <select
+          value={i18n.language}
+          onChange={(e) => i18n.changeLanguage(e.target.value)}
+          className="rounded px-2 py-1 text-sm"
+        >
+          <option value="en">EN</option>
+          <option value="hi">हिंदी</option>
+          <option value="mr">मराठी</option>
+        </select>
 
-           <Link to="/chat">
-            <button
-              aria-label="Open chat"
-              className={`p-2 rounded-md transition ${
-                isScrolled
-                  ? "text-gray-700 hover:bg-gray-100"
-                  : "text-white hover:bg-white/10"
-              }`}
-              title="Chat"
-            >
-              {/* chat icon */}
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </button>
-           </Link>
-          </>
-        )}
-
-        {/* Login/Signup for guests */}
         {!user && (
-          <>
-            <button
-              className={`px-4 py-2 rounded-md font-semibold text-sm transition-all hover:cursor-pointer ${
-                isScrolled
-                  ? "bg-[#FF8040] text-white hover:bg-black"
-                  : "bg-gray-800 text-white hover:bg-black"
-              }`}
-              onClick={() => navigate("/login")}
-              aria-label="Login or Signup"
-            >
-              Login / Signup
-            </button>
-          </>
+          <button
+            onClick={() => navigate("/login")}
+            className="bg-black text-white px-4 py-2 rounded"
+          >
+            {t("loginSignup")}
+          </button>
         )}
 
-        {/* Profile / Avatar */}
         {user && (
           <div className="relative">
             <button
               ref={profileButtonRef}
-              className="flex items-center gap-2 focus:outline-none"
               onClick={() => setIsProfileOpen((s) => !s)}
-              aria-haspopup="true"
-              aria-expanded={isProfileOpen}
-              aria-label="Open profile menu"
-              title="Account"
+              className="flex items-center gap-2"
             >
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <User className="w-6 h-6 text-white" />
-              )}
-              <span
-                className={`hidden sm:inline ${
-                  isScrolled ? "text-gray-700" : "text-white"
-                }`}
-              >
+              <User className="w-6 h-6 text-white" />
+              <span className={isScrolled ? "text-gray-700" : "text-white"}>
                 {firstName(user.name)}
               </span>
-              <svg
-                className={`h-4 w-4 transition-transform ${
-                  isProfileOpen ? "rotate-180" : "rotate-0"
-                } ${isScrolled ? "text-gray-700" : "text-white"}`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M19 9l-7 7-7-7" />
-              </svg>
             </button>
 
-            {/* Profile dropdown */}
             {isProfileOpen && (
               <div
                 ref={profileMenuRef}
-                className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 py-1 z-50"
-                role="menu"
-                aria-label="Profile menu"
+                className="absolute right-0 mt-2 bg-white rounded shadow"
               >
-                <Link
-                  to="/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  Profile
-                </Link>
-                <Link
-                  to="/settings"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  Settings
-                </Link>
-                {user.role === "doctor" ? (
-                  <Link
-                    to="dashboard/doctor"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                ) : (
-                  <Link
-                    to="/patient/dashboard"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                <button
-                  onClick={logout}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                >
-                  Logout
+                <Link className="block px-4 py-2" to="/profile">{t("profile")}</Link>
+                <Link className="block px-4 py-2" to="/settings">{t("settings")}</Link>
+                <button onClick={logout} className="block px-4 py-2 text-red-600">
+                  {t("logout")}
                 </button>
               </div>
             )}
@@ -333,142 +159,48 @@ const Navbar = () => {
         )}
       </div>
 
-      {/* Mobile + Tablet Menu Button (up to md/lg) */}
-      <div className="flex items-center lg:hidden">
-        <button
-          onClick={() => {
-            setIsMenuOpen((s) => !s);
-            setIsProfileOpen(false);
-          }}
-          className="inline-flex items-center justify-center"
-          aria-controls="mobile-menu"
-          aria-expanded={isMenuOpen}
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-        >
-          <svg
-            className={`h-7 w-7 cursor-pointer ${
-              isScrolled ? "text-gray-700" : "text-white"
-            }`}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+      {/* Mobile menu button */}
+      <button className="lg:hidden text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        ☰
+      </button>
+
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 bg-white flex flex-col items-center justify-center gap-6">
+          {navLinks.map((link, i) => (
+            <Link
+              key={i}
+              to={link.path}
+              onClick={() => setIsMenuOpen(false)}
+              ref={i === 0 ? firstMenuLinkRef : undefined}
+            >
+              {link.name}
+            </Link>
+          ))}
+
+          <select
+            value={i18n.language}
+            onChange={(e) => i18n.changeLanguage(e.target.value)}
+            className="border px-3 py-2"
           >
-            <line x1="4" y1="6" x2="20" y2="6" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="18" x2="20" y2="18" />
-          </svg>
-        </button>
-      </div>
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="mr">मराठी</option>
+          </select>
 
-      {/* Mobile/Tablet Menu */}
-      <div
-        id="mobile-menu"
-        role="dialog"
-        aria-modal="true"
-        className={`fixed top-0 left-0 w-full h-screen bg-white text-lg flex flex-col lg:hidden items-center justify-center gap-6 font-medium text-gray-800 transition-transform duration-500 transform ${
-          isMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Close Button */}
-        <button
-          className="absolute top-4 right-4"
-          onClick={() => setIsMenuOpen(false)}
-          aria-label="Close menu"
-        >
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+          {!user && (
+            <button onClick={() => navigate("/login")}>
+              {t("loginSignup")}
+            </button>
+          )}
 
-        {/* Links */}
-        {navLinks.map((link, i) => (
-          <Link
-            key={i}
-            to={link.path}
-            className="hover:text-[#FF8040] text-base sm:text-lg"
-            onClick={() => setIsMenuOpen(false)}
-            ref={i === 0 ? firstMenuLinkRef : undefined}
-          >
-            {link.name}
-          </Link>
-        ))}
-
-        {/* Mobile/Tablet Login Button (when guest) */}
-        {!user && (
-          <button
-            className="bg-[#FF8040] text-white rounded-md mt-4 px-4 py-2 text-sm sm:text-base"
-            onClick={() => {
-              setIsMenuOpen(false);
-              navigate("/login");
-            }}
-          >
-            Login / Signup
-          </button>
-        )}
-
-        {/* If logged in, quick actions */}
-        {user && (
-          <>
-            <div className="flex gap-3 mt-4">
-              <button
-                className="px-3 py-2 rounded-md bg-gray-100"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  navigate(
-                    user.role === "doctor" ? "/doctor/chat" : "/patient/chat"
-                  );
-                }}
-              >
-                Open Chat
-              </button>
-              <button
-                className="px-3 py-2 rounded-md bg-gray-100"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  navigate(
-                    user.role === "doctor"
-                      ? "/doctor/ai-tools"
-                      : "/patient/summary"
-                  );
-                }}
-              >
-                AI Summary
-              </button>
-            </div>
-
-            <div className="mt-6">
-              <button
-                className="block w-full text-left px-6 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  navigate("/profile");
-                }}
-              >
-                Profile
-              </button>
-              <button
-                className="block w-full text-left px-6 py-2 text-sm text-red-600 hover:bg-gray-100"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  logout();
-                }}
-              >
-                Logout
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+          {user && (
+            <button onClick={logout} className="text-red-600">
+              {t("logout")}
+            </button>
+          )}
+        </div>
+      )}
     </nav>
   );
 };

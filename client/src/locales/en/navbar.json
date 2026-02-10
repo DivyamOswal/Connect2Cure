@@ -1,0 +1,20 @@
+{
+  "home": "Home",
+  "findDoctors": "Find Doctors",
+  "features": "Features",
+  "about": "About",
+  "contact": "Contact",
+  "dashboard": "Dashboard",
+  "myDoctors": "My Doctors",
+  "allDoctors": "All Doctors",
+  "appointments": "My Appointments",
+  "chat": "Chat",
+  "videoCall": "Video Call",
+  "aiSummary": "AI Summary",
+  "billing": "Billing",
+  "plans": "Plans",
+  "loginSignup": "Login / Signup",
+  "logout": "Logout",
+  "profile": "Profile",
+  "settings": "Settings"
+}

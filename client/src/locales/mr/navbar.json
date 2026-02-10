@@ -1,0 +1,20 @@
+{
+  "home": "मुख्यपृष्ठ",
+  "findDoctors": "डॉक्टर शोधा",
+  "features": "वैशिष्ट्ये",
+  "about": "आमच्याबद्दल",
+  "contact": "संपर्क",
+  "dashboard": "डॅशबोर्ड",
+  "myDoctors": "माझे डॉक्टर",
+  "allDoctors": "सर्व डॉक्टर",
+  "appointments": "माझ्या अपॉइंटमेंट्स",
+  "chat": "चॅट",
+  "videoCall": "व्हिडिओ कॉल",
+  "aiSummary": "एआय सारांश",
+  "billing": "बिलिंग",
+  "plans": "योजना",
+  "loginSignup": "लॉगिन / साइनअप",
+  "logout": "लॉगआउट",
+  "profile": "प्रोफाइल",
+  "settings": "सेटिंग्स"
+}
