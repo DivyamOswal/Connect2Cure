@@ -2,8 +2,11 @@ import React from "react";
 import heroImg from "../../assets/Home/hero_img.avif";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Hero = () => {
+  const { t } = useTranslation();
+
   return (
     <section
       role="region"
@@ -13,32 +16,30 @@ const Hero = () => {
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${heroImg})`,
-        }}
-      ></div>
+        style={{ backgroundImage: `url(${heroImg})` }}
+      />
 
-      {/* Optional overlay for better text contrast */}
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black/40"></div>
 
       {/* Content */}
       <div className="relative z-10 max-w-2xl">
         <p className="bg-black/70 px-3.5 py-1 rounded-full mt-20 text-sm inline-block">
-          Your Health, Simplified and Connected
+          {t("hero.tagline")}
         </p>
 
         <h1 className="font-playfair text-3xl md:text-5xl leading-tight font-medium mt-4">
-          Discover a Smarter, Simpler Way to Manage Your Health
+          {t("hero.title")}
         </h1>
 
         <p className="max-w-md mt-3 text-sm md:text-base text-white/90">
-          Access your health records, prescriptions, and doctor consultations all in one secure, easy-to-use dashboard. Take control of your healthcare journey today.
+          {t("hero.description")}
         </p>
 
         <Link to="/doctors">
           <button className="mt-6 inline-flex items-center gap-2 bg-black/90 text-white font-medium px-5 py-3 rounded-lg hover:bg-black/70 transition">
             <Search className="h-4 w-4" />
-            <span>Explore Doctors</span>
+            <span>{t("hero.exploreDoctors")}</span>
           </button>
         </Link>
       </div>
