@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 const HomeFeatures = () => {
-  const { t } = useTranslation("homefeatures");
+  const { t } = useTranslation("features");
   const [itemsToShow, setItemsToShow] = useState(2);
 
   useEffect(() => {
