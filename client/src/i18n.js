@@ -13,6 +13,7 @@ import hiHero from "./locales/hi/hero.json";
 import mrHero from "./locales/mr/hero.json";
 
 // Home Features translations
+import enFeatures from "./locales/en/homefeatures.json";
 import hiFeatures from "./locales/hi/homefeatures.json";
 import mrFeatures from "./locales/mr/homefeatures.json";
 
