@@ -1,15 +1,26 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const GetStarted = () => {
-  return (
-    <div className='flex items-center justify-center flex-col gap-4 bg-[#E6E6E6] pt-4 pb-5 '>
-        <h1 className='font-semibold lg:text-xl '>Seamless healthcare management for doctors & patients.</h1>
-        <Link to='/login'>
-        <button className='border px-6 py-2 rounded hover:border-[#FF8040] hover:bg-white transition-colors'>Get Started</button>
-        </Link>
-    </div>
-  )
-}
+  const { t } = useTranslation("getstarted");
 
-export default GetStarted
+  return (
+    <div className="flex items-center justify-center flex-col gap-4 bg-[#E6E6E6] pt-4 pb-5">
+      <h1 className="font-semibold lg:text-xl">
+        {t("headline", {
+          defaultValue:
+            "Seamless healthcare management for doctors & patients.",
+        })}
+      </h1>
+
+      <Link to="/login">
+        <button className="border px-6 py-2 rounded hover:border-[#FF8040] hover:bg-white transition-colors">
+          {t("button", { defaultValue: "Get Started" })}
+        </button>
+      </Link>
+    </div>
+  );
+};
+
+export default GetStarted;

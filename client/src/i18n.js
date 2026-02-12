@@ -37,6 +37,16 @@ import enBenefits from "./locales/en/benefits.json";
 import hiBenefits from "./locales/hi/benefits.json";
 import mrBenefits from "./locales/mr/benefits.json";
 
+import enGetStarted from "./locales/en/getstarted.json";
+import hiGetStarted from "./locales/hi/getstarted.json";
+import mrGetStarted from "./locales/mr/getstarted.json";
+
+import enFooter from "./locales/en/footer.json";
+import hiFooter from "./locales/hi/footer.json";
+import mrFooter from "./locales/mr/footer.json";
+
+
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -49,7 +59,9 @@ i18n
         doctors: enDoctors,
         about: enAbout,
         dashboard: enDashboard,
-        benefits: enBenefits
+        benefits: enBenefits,
+        getstarted: enGetStarted,
+        footer: enFooter
       },
       hi: {
         navbar: hiNavbar,
@@ -58,7 +70,9 @@ i18n
         doctors: hiDoctors,
         about: hiAbout,
         dashboard: hiDashboard,
-        benefits: hiBenefits
+        benefits: hiBenefits,
+        getstarted: hiGetStarted,
+        footer: hiFooter
       },
       mr: {
         navbar: mrNavbar,
@@ -67,7 +81,9 @@ i18n
         doctors: mrDoctors,
         about: mrAbout,
         dashboard: mrDashboard,
-        benefits: mrBenefits
+        benefits: mrBenefits,
+        getstarted: mrGetStarted,
+        footer: mrFooter
       }
     },
 
@@ -75,14 +91,17 @@ i18n
 
     // ALL namespaces used in the app
     ns: [
-      "navbar",
-      "hero",
-      "features",
-      "doctors",
-      "about",
-      "dashboard",
-      "benefits"
-    ],
+  "navbar",
+  "hero",
+  "features",
+  "doctors",
+  "about",
+  "dashboard",
+  "benefits",
+  "getstarted",
+  "footer"
+],
+
 
     // Default namespace
     defaultNS: "navbar",

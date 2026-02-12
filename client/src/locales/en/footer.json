@@ -1,0 +1,21 @@
+{
+  "description": "Your one-stop solution for patient care, appointments, and medical records.",
+  "sections": {
+    "explore": "Explore",
+    "company": "Company",
+    "support": "Support",
+    "socials": "Socials"
+  },
+  "links": {
+    "doctors": "Doctors",
+    "features": "Features",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Login",
+    "faq": "FAQ",
+    "help": "Help Center",
+    "terms": "Terms & Privacy"
+  },
+  "companyInfo": "Connect2Cure is part of Connect2Cure HealthTech Solutions, a leading provider of digital healthcare and patient management services.",
+  "rights": "All rights reserved."
+}
