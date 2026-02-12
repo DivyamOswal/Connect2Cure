@@ -17,6 +17,11 @@ import enFeatures from "./locales/en/homefeatures.json";
 import hiFeatures from "./locales/hi/homefeatures.json";
 import mrFeatures from "./locales/mr/homefeatures.json";
 
+// Meet Doctors translations (IMPORTANT)
+import enDoctors from "./locales/en/meetdoctors.json";
+import hiDoctors from "./locales/hi/meetdoctors.json";
+import mrDoctors from "./locales/mr/meetdoctors.json";
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -25,24 +30,27 @@ i18n
       en: {
         navbar: enNavbar,
         hero: enHero,
-        features: enFeatures
+        features: enFeatures,
+        doctors: enDoctors
       },
       hi: {
         navbar: hiNavbar,
         hero: hiHero,
-        features: hiFeatures
+        features: hiFeatures,
+        doctors: hiDoctors
       },
       mr: {
         navbar: mrNavbar,
         hero: mrHero,
-        features: mrFeatures
+        features: mrFeatures,
+        doctors: mrDoctors
       }
     },
 
     fallbackLng: "en",
 
     // ALL namespaces used in the app
-    ns: ["navbar", "hero", "features"],
+    ns: ["navbar", "hero", "features", "doctors"],
 
     // Default namespace (Navbar uses this)
     defaultNS: "navbar",
