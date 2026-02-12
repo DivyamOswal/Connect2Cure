@@ -22,10 +22,15 @@ import enDoctors from "./locales/en/meetdoctors.json";
 import hiDoctors from "./locales/hi/meetdoctors.json";
 import mrDoctors from "./locales/mr/meetdoctors.json";
 
-// About System translations (THIS WAS MISSING)
+// About System translations
 import enAbout from "./locales/en/aboutsystem.json";
 import hiAbout from "./locales/hi/aboutsystem.json";
 import mrAbout from "./locales/mr/aboutsystem.json";
+
+// Dashboard Overview translations (YOU MISSED THIS)
+import enDashboard from "./locales/en/dashboardoverview.json";
+import hiDashboard from "./locales/hi/dashboardoverview.json";
+import mrDashboard from "./locales/mr/dashboardoverview.json";
 
 i18n
   .use(LanguageDetector)
@@ -37,30 +42,33 @@ i18n
         hero: enHero,
         features: enFeatures,
         doctors: enDoctors,
-        about: enAbout
+        about: enAbout,
+        dashboard: enDashboard
       },
       hi: {
         navbar: hiNavbar,
         hero: hiHero,
         features: hiFeatures,
         doctors: hiDoctors,
-        about: hiAbout
+        about: hiAbout,
+        dashboard: hiDashboard
       },
       mr: {
         navbar: mrNavbar,
         hero: mrHero,
         features: mrFeatures,
         doctors: mrDoctors,
-        about: mrAbout
+        about: mrAbout,
+        dashboard: mrDashboard
       }
     },
 
     fallbackLng: "en",
 
     // ALL namespaces used in the app
-    ns: ["navbar", "hero", "features", "doctors", "about"],
+    ns: ["navbar", "hero", "features", "doctors", "about", "dashboard"],
 
-    // Default namespace (Navbar uses this)
+    // Default namespace
     defaultNS: "navbar",
 
     interpolation: {
