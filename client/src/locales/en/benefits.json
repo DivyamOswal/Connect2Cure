@@ -1,0 +1,21 @@
+{
+  "title": "Benefits",
+  "items": {
+    "faster": {
+      "title": "Faster record management",
+      "description": "Quickly create, find, and update patient records in a few clicks."
+    },
+    "reducedErrors": {
+      "title": "Reduced manual errors",
+      "description": "Structured forms and validations reduce data entry mistakes."
+    },
+    "secure": {
+      "title": "Secure and reliable",
+      "description": "Encrypted storage and role-based access protect sensitive data."
+    },
+    "easy": {
+      "title": "Easy to use",
+      "description": "A clean interface designed for medical staff with minimal training."
+    }
+  }
+}

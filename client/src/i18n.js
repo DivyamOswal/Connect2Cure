@@ -27,10 +27,15 @@ import enAbout from "./locales/en/aboutsystem.json";
 import hiAbout from "./locales/hi/aboutsystem.json";
 import mrAbout from "./locales/mr/aboutsystem.json";
 
-// Dashboard Overview translations (YOU MISSED THIS)
+// Dashboard Overview translations
 import enDashboard from "./locales/en/dashboardoverview.json";
 import hiDashboard from "./locales/hi/dashboardoverview.json";
 import mrDashboard from "./locales/mr/dashboardoverview.json";
+
+// ✅ Benefits translations (THIS WAS MISSING)
+import enBenefits from "./locales/en/benefits.json";
+import hiBenefits from "./locales/hi/benefits.json";
+import mrBenefits from "./locales/mr/benefits.json";
 
 i18n
   .use(LanguageDetector)
@@ -43,7 +48,8 @@ i18n
         features: enFeatures,
         doctors: enDoctors,
         about: enAbout,
-        dashboard: enDashboard
+        dashboard: enDashboard,
+        benefits: enBenefits
       },
       hi: {
         navbar: hiNavbar,
@@ -51,7 +57,8 @@ i18n
         features: hiFeatures,
         doctors: hiDoctors,
         about: hiAbout,
-        dashboard: hiDashboard
+        dashboard: hiDashboard,
+        benefits: hiBenefits
       },
       mr: {
         navbar: mrNavbar,
@@ -59,14 +66,23 @@ i18n
         features: mrFeatures,
         doctors: mrDoctors,
         about: mrAbout,
-        dashboard: mrDashboard
+        dashboard: mrDashboard,
+        benefits: mrBenefits
       }
     },
 
     fallbackLng: "en",
 
     // ALL namespaces used in the app
-    ns: ["navbar", "hero", "features", "doctors", "about", "dashboard"],
+    ns: [
+      "navbar",
+      "hero",
+      "features",
+      "doctors",
+      "about",
+      "dashboard",
+      "benefits"
+    ],
 
     // Default namespace
     defaultNS: "navbar",
