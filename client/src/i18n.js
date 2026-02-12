@@ -17,10 +17,15 @@ import enFeatures from "./locales/en/homefeatures.json";
 import hiFeatures from "./locales/hi/homefeatures.json";
 import mrFeatures from "./locales/mr/homefeatures.json";
 
-// Meet Doctors translations (IMPORTANT)
+// Meet Doctors translations
 import enDoctors from "./locales/en/meetdoctors.json";
 import hiDoctors from "./locales/hi/meetdoctors.json";
 import mrDoctors from "./locales/mr/meetdoctors.json";
+
+// About System translations (THIS WAS MISSING)
+import enAbout from "./locales/en/aboutsystem.json";
+import hiAbout from "./locales/hi/aboutsystem.json";
+import mrAbout from "./locales/mr/aboutsystem.json";
 
 i18n
   .use(LanguageDetector)
@@ -31,26 +36,29 @@ i18n
         navbar: enNavbar,
         hero: enHero,
         features: enFeatures,
-        doctors: enDoctors
+        doctors: enDoctors,
+        about: enAbout
       },
       hi: {
         navbar: hiNavbar,
         hero: hiHero,
         features: hiFeatures,
-        doctors: hiDoctors
+        doctors: hiDoctors,
+        about: hiAbout
       },
       mr: {
         navbar: mrNavbar,
         hero: mrHero,
         features: mrFeatures,
-        doctors: mrDoctors
+        doctors: mrDoctors,
+        about: mrAbout
       }
     },
 
     fallbackLng: "en",
 
     // ALL namespaces used in the app
-    ns: ["navbar", "hero", "features", "doctors"],
+    ns: ["navbar", "hero", "features", "doctors", "about"],
 
     // Default namespace (Navbar uses this)
     defaultNS: "navbar",
