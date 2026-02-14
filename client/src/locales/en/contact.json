@@ -1,0 +1,21 @@
+{
+  "heading": "Contact Us",
+  "subtitle": "We’re here to help you find your perfect stay. Whether you have a booking query, partnership proposal, or feedback we’d love to hear from you.",
+  "imageAlt": "Contact support",
+
+  "form": {
+    "nameLabel": "Your Name",
+    "namePlaceholder": "Enter your name",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "Enter your email",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Write your message...",
+    "submit": "Send Message"
+  },
+
+  "info": {
+    "address": "📍 Address: 123 Beach Road, Goa, India",
+    "phone": "📞 Phone: +91 98765 43210",
+    "email": "✉️ Email: support@easewithstay.com"
+  }
+}

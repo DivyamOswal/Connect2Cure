@@ -57,6 +57,16 @@ import enFeaturesPage from "./locales/en/featurespage.json";
 import hiFeaturesPage from "./locales/hi/featurespage.json";
 import mrFeaturesPage from "./locales/mr/featurespage.json";
 
+// About us Page
+import enAboutPage from "./locales/en/aboutpage.json";
+import hiAboutPage from "./locales/hi/aboutpage.json";
+import mrAboutPage from "./locales/mr/aboutpage.json";
+
+// Contact us Page
+import enContact from "./locales/en/contact.json";
+import hiContact from "./locales/hi/contact.json";
+import mrContact from "./locales/mr/contact.json";
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -74,6 +84,8 @@ i18n
         footer: enFooter,
         finddoctors: enFindDoctors,
         featurespage: enFeaturesPage,
+        aboutpage: enAboutPage,
+        contact: enContact,
       },
       hi: {
         navbar: hiNavbar,
@@ -87,6 +99,8 @@ i18n
         footer: hiFooter,
         finddoctors: hiFindDoctors,
         featurespage: hiFeaturesPage,
+        aboutpage: hiAboutPage,
+        contact: hiContact,
       },
       mr: {
         navbar: mrNavbar,
@@ -100,6 +114,8 @@ i18n
         footer: mrFooter,
         finddoctors: mrFindDoctors,
         featurespage: mrFeaturesPage,
+        aboutpage: mrAboutPage,
+        contact: mrContact,
       },
     },
 
@@ -117,6 +133,8 @@ i18n
       "footer",
       "finddoctors",
       "featurespage",
+      "aboutpage",
+      "contact",
     ],
 
     defaultNS: "navbar",

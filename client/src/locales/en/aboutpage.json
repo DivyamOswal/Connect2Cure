@@ -1,0 +1,32 @@
+{
+  "heading": "About Us",
+  "intro": "“Healthcare made simpler, care made smarter.” At Connect2Cure, we bring patients and doctors together through a seamless, secure, and intelligent platform designed to improve care, save time, and streamline every medical interaction.",
+
+  "section1": {
+    "title": "Every consultation, a step toward better health.",
+    "content": "At Connect2Cure, we believe healthcare should be more than just appointments. From routine checkups to long-term care, we connect patients with trusted and verified doctors across all specialties.",
+    "imageAlt": "Healthcare consultation"
+  },
+
+  "section2": {
+    "title": "What we offer?",
+    "imageAlt": "Connect2Cure services",
+    "items": {
+      "consultations": "🩺 Consultations: Instant access to trusted doctors.",
+      "specialists": "👨‍⚕️ Specialist Appointments: Book top experts across fields.",
+      "records": "📝 Digital Medical Records: Secure access anytime.",
+      "reminders": "🔔 Health Reminders: Automated follow-ups & alerts."
+    }
+  },
+
+  "section3": {
+    "title": "Why choose us?",
+    "imageAlt": "Why Connect2Cure",
+    "points": {
+      "one": "• Verified and qualified doctors",
+      "two": "• Transparent consultation fees",
+      "three": "• Fast, secure booking",
+      "four": "• 24×7 healthcare support"
+    }
+  }
+}

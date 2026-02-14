@@ -1,0 +1,21 @@
+{
+  "heading": "संपर्क करें",
+  "subtitle": "हम आपकी मदद के लिए यहाँ हैं। बुकिंग, साझेदारी या प्रतिक्रिया के लिए हमसे संपर्क करें।",
+  "imageAlt": "संपर्क सहायता",
+
+  "form": {
+    "nameLabel": "आपका नाम",
+    "namePlaceholder": "अपना नाम दर्ज करें",
+    "emailLabel": "ईमेल पता",
+    "emailPlaceholder": "अपना ईमेल दर्ज करें",
+    "messageLabel": "संदेश",
+    "messagePlaceholder": "अपना संदेश लिखें...",
+    "submit": "संदेश भेजें"
+  },
+
+  "info": {
+    "address": "📍 पता: 123 बीच रोड, गोवा, भारत",
+    "phone": "📞 फ़ोन: +91 98765 43210",
+    "email": "✉️ ईमेल: support@easewithstay.com"
+  }
+}
