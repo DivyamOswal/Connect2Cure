@@ -1,9 +1,12 @@
 // src/pages/PatientDoctor.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import api from "../../api/axios";
 
 const PatientDoctor = () => {
+  const { t } = useTranslation("patientdoctor");
+
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -19,41 +22,40 @@ const PatientDoctor = () => {
 
         const res = await api.get("/appointments/my");
         const appts = res.data || [];
-
         const map = new Map();
 
         appts.forEach((appt) => {
           const doc = appt.doctor;
           if (!doc || !doc._id) return;
 
-          const docId = doc._id.toString();
-          const existing = map.get(docId);
-
           const dt = new Date(`${appt.date}T${appt.time || "00:00"}`).getTime();
+          const existing = map.get(doc._id);
 
           if (!existing) {
-            map.set(docId, {
+            map.set(doc._id, {
               doctor: doc,
               totalVisits: 1,
               lastAppointment: dt,
             });
           } else {
             existing.totalVisits += 1;
-            if (dt > existing.lastAppointment) {
-              existing.lastAppointment = dt;
-            }
+            existing.lastAppointment = Math.max(
+              existing.lastAppointment,
+              dt
+            );
           }
         });
 
-        const list = Array.from(map.values()).sort(
-          (a, b) => b.lastAppointment - a.lastAppointment
+        setDoctors(
+          Array.from(map.values()).sort(
+            (a, b) => b.lastAppointment - a.lastAppointment
+          )
         );
-
-        setDoctors(list);
       } catch (err) {
-        console.error("PATIENT DOCTORS ERROR:", err);
         setError(
-          err?.response?.data?.message || err.message || "Something went wrong"
+          err?.response?.data?.message ||
+            err.message ||
+            t("errors.generic")
         );
       } finally {
         setLoading(false);
@@ -61,10 +63,14 @@ const PatientDoctor = () => {
     };
 
     fetchDoctors();
-  }, []);
+  }, [t]);
 
   if (loading) {
-    return <p className="text-gray-500 px-4 py-4">Loading doctors...</p>;
+    return (
+      <p className="text-gray-500 px-4 py-4">
+        {t("loading")}
+      </p>
+    );
   }
 
   if (error) {
@@ -77,24 +83,22 @@ const PatientDoctor = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-semibold mb-2">My Doctors</h1>
+      <h1 className="text-2xl font-semibold mb-2">
+        {t("title")}
+      </h1>
       <p className="text-sm text-gray-500 mb-6">
-        Doctors you&apos;ve consulted or booked appointments with.
+        {t("subtitle")}
       </p>
 
       {doctors.length === 0 ? (
         <p className="text-sm text-gray-500">
-          You haven&apos;t booked any appointments yet.
+          {t("empty")}
         </p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {doctors.map(({ doctor, totalVisits, lastAppointment }) => {
-            const lastVisitDate = new Date(lastAppointment);
-
-            // Build image URL if you store relative path on doctor.image
             const BACKEND =
               import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:5000";
-
             const imgSrc = doctor.image ? `${BACKEND}${doctor.image}` : null;
 
             return (
@@ -102,7 +106,6 @@ const PatientDoctor = () => {
                 key={doctor._id}
                 className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden flex flex-col"
               >
-                {/* IMAGE */}
                 {imgSrc && (
                   <img
                     src={imgSrc}
@@ -111,78 +114,49 @@ const PatientDoctor = () => {
                   />
                 )}
 
-                {/* BODY */}
                 <div className="p-4 flex flex-col flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h2 className="font-semibold text-gray-900 text-lg">
-                        {doctor.name}
-                      </h2>
+                  <h2 className="font-semibold text-lg">{doctor.name}</h2>
 
-                      {doctor.specialization && (
-                        <p className="text-sm text-[#FF8040] font-medium mt-0.5">
-                          {doctor.specialization}
-                        </p>
-                      )}
-
-                      {doctor.location && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          📍 {doctor.location}
-                        </p>
-                      )}
-                    </div>
-
-                    {doctor.fee && (
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500">Consultation</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          ₹{doctor.fee}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* VISITS INFO */}
-                  <div className="mt-3 text-xs text-gray-600 space-y-1">
-                    <p>
-                      Total visits:{" "}
-                      <span className="font-semibold">{totalVisits}</span>
+                  {doctor.specialization && (
+                    <p className="text-sm text-[#FF8040]">
+                      {doctor.specialization}
                     </p>
+                  )}
+
+                  {doctor.location && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      📍 {doctor.location}
+                    </p>
+                  )}
+
+                  <div className="mt-3 text-xs text-gray-600">
                     <p>
-                      Last visit:{" "}
+                      {t("totalVisits")}{" "}
                       <span className="font-semibold">
-                        {lastVisitDate.toLocaleString()}
+                        {totalVisits}
+                      </span>
+                    </p>
+                    <p>
+                      {t("lastVisit")}{" "}
+                      <span className="font-semibold">
+                        {new Date(lastAppointment).toLocaleString()}
                       </span>
                     </p>
                   </div>
 
-                  {/* TAGS / BADGES */}
-                  <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                    {doctor.rating !== undefined && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
-                        ⭐ {doctor.rating ?? "-"}{" "}
-                        {doctor.reviews ? `(${doctor.reviews} reviews)` : ""}
-                      </span>
-                    )}
-                    <span className="inline-flex px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                      Last consulted patient
-                    </span>
-                  </div>
-
-                  {/* ACTIONS */}
                   <div className="mt-4 flex gap-2">
                     <Link
                       to={`/doctor/${doctor._id}`}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium border border-gray-200 hover:bg-gray-50"
+                      className="flex-1 border rounded-lg py-2 text-sm text-center"
                     >
-                      View Profile
+                      {t("viewProfile")}
                     </Link>
                     <Link
                       to={`/doctor/${doctor._id}`}
                       state={{ source: "myDoctors" }}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium bg-[#FF8040] text-white hover:bg-black"
+                      className="flex-1 bg-[#FF8040] text-white rounded-lg py-2 text-sm text-center"
                     >
-                      Book Again
+                      {t("bookAgain")}
                     </Link>
                   </div>
                 </div>

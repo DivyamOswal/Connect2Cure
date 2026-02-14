@@ -1,0 +1,16 @@
+{
+  "title": "My Doctors",
+  "subtitle": "Doctors you've consulted or booked appointments with.",
+  "loading": "Loading doctors...",
+  "empty": "You haven't booked any appointments yet.",
+
+  "totalVisits": "Total visits:",
+  "lastVisit": "Last visit:",
+
+  "viewProfile": "View Profile",
+  "bookAgain": "Book Again",
+
+  "errors": {
+    "generic": "Something went wrong"
+  }
+}

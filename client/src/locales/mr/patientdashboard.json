@@ -1,0 +1,28 @@
+{
+  "heading": "माझा आरोग्य आढावा",
+  "credits": "क्रेडिट्स:",
+  "loading": "डॅशबोर्ड लोड होत आहे...",
+
+  "stats": {
+    "totalAppointments": "एकूण अपॉइंटमेंट",
+    "upcomingAppointments": "आगामी अपॉइंटमेंट"
+  },
+
+  "upcoming": {
+    "title": "आगामी अपॉइंटमेंट",
+    "none": "कोणतीही आगामी अपॉइंटमेंट नाही."
+  },
+
+  "table": {
+    "doctor": "डॉक्टर",
+    "email": "ईमेल",
+    "datetime": "दिनांक आणि वेळ",
+    "status": "स्थिती",
+    "unknownDoctor": "अज्ञात डॉक्टर"
+  },
+
+  "errors": {
+    "generic": "काहीतरी चूक झाली",
+    "analysisFailed": "रिपोर्ट विश्लेषण अयशस्वी झाले."
+  }
+}

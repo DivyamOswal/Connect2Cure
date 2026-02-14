@@ -1,0 +1,28 @@
+{
+  "heading": "मेरा स्वास्थ्य अवलोकन",
+  "credits": "क्रेडिट्स:",
+  "loading": "डैशबोर्ड लोड हो रहा है...",
+
+  "stats": {
+    "totalAppointments": "कुल अपॉइंटमेंट",
+    "upcomingAppointments": "आगामी अपॉइंटमेंट"
+  },
+
+  "upcoming": {
+    "title": "आगामी अपॉइंटमेंट",
+    "none": "कोई आगामी अपॉइंटमेंट नहीं है।"
+  },
+
+  "table": {
+    "doctor": "डॉक्टर",
+    "email": "ईमेल",
+    "datetime": "तारीख और समय",
+    "status": "स्थिति",
+    "unknownDoctor": "अज्ञात डॉक्टर"
+  },
+
+  "errors": {
+    "generic": "कुछ गलत हो गया",
+    "analysisFailed": "रिपोर्ट विश्लेषण विफल रहा।"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "heading": "My Health Overview",
+  "credits": "Credits:",
+  "loading": "Loading dashboard...",
+
+  "stats": {
+    "totalAppointments": "Total appointments",
+    "upcomingAppointments": "Upcoming appointments"
+  },
+
+  "upcoming": {
+    "title": "Upcoming appointments",
+    "none": "No upcoming appointments."
+  },
+
+  "table": {
+    "doctor": "Doctor",
+    "email": "Email",
+    "datetime": "Date & time",
+    "status": "Status",
+    "unknownDoctor": "Unknown doctor"
+  },
+
+  "errors": {
+    "generic": "Something went wrong",
+    "analysisFailed": "Failed to analyze report."
+  }
+}

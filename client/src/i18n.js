@@ -67,6 +67,18 @@ import enContact from "./locales/en/contact.json";
 import hiContact from "./locales/hi/contact.json";
 import mrContact from "./locales/mr/contact.json";
 
+// Patient Dashboard
+import enPatientDashboard from "./locales/en/patientdashboard.json";
+import hiPatientDashboard from "./locales/hi/patientdashboard.json";
+import mrPatientDashboard from "./locales/mr/patientdashboard.json";
+
+// Patient Doctor
+import enPatientDoctor from "./locales/en/patientdoctor.json";
+import hiPatientDoctor from "./locales/hi/patientdoctor.json";
+import mrPatientDoctor from "./locales/mr/patientdoctor.json";
+
+
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -86,6 +98,9 @@ i18n
         featurespage: enFeaturesPage,
         aboutpage: enAboutPage,
         contact: enContact,
+        patientdashboard: enPatientDashboard,
+        patientdoctor: enPatientDoctor
+
       },
       hi: {
         navbar: hiNavbar,
@@ -101,6 +116,10 @@ i18n
         featurespage: hiFeaturesPage,
         aboutpage: hiAboutPage,
         contact: hiContact,
+        patientdashboard: hiPatientDashboard,
+        patientdoctor: hiPatientDoctor
+
+
       },
       mr: {
         navbar: mrNavbar,
@@ -116,6 +135,10 @@ i18n
         featurespage: mrFeaturesPage,
         aboutpage: mrAboutPage,
         contact: mrContact,
+        patientdashboard: mrPatientDashboard,
+        patientdoctor: mrPatientDoctor
+
+
       },
     },
 
@@ -135,6 +158,10 @@ i18n
       "featurespage",
       "aboutpage",
       "contact",
+      "patientdashboard",
+      "patientdoctor"
+
+
     ],
 
     defaultNS: "navbar",

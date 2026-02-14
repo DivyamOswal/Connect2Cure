@@ -1,6 +1,7 @@
 // src/pages/PatientDashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import ReportForm from "../../components/ReportForm";
 import ReportSummary from "../../components/ReportSummary";
@@ -9,6 +10,7 @@ import api from "../../api/axios";
 import { analyzeReportFile } from "../../api/reportApi";
 
 const PatientDashboard = () => {
+  const { t } = useTranslation("patientdashboard");
   const navigate = useNavigate();
 
   const [stats, setStats] = useState(null);
@@ -16,7 +18,6 @@ const PatientDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // NEW: summary + charts state
   const [credits, setCredits] = useState(0);
   const [summary, setSummary] = useState("");
   const [medicalTerms, setMedicalTerms] = useState([]);
@@ -29,11 +30,10 @@ const PatientDashboard = () => {
       try {
         const token = localStorage.getItem("accessToken");
         if (!token) {
-          window.location.href = "/login/patient";
+          navigate("/login/patient");
           return;
         }
 
-        // appointments + user info
         const [apptRes, meRes] = await Promise.all([
           api.get("/appointments/my"),
           api.get("/auth/me"),
@@ -45,9 +45,8 @@ const PatientDashboard = () => {
         const upcomingAppts = appts
           .filter((a) => {
             if (a.status !== "confirmed") return false;
-            const dtString = a.time ? `${a.date}T${a.time}` : `${a.date}T00:00`;
-            const when = new Date(dtString);
-            return when >= now;
+            const dt = new Date(`${a.date}T${a.time || "00:00"}`);
+            return dt >= now;
           })
           .sort((a, b) => {
             const da = new Date(`${a.date}T${a.time || "00:00"}`).getTime();
@@ -61,13 +60,12 @@ const PatientDashboard = () => {
         });
 
         setUpcoming(upcomingAppts);
-
-        // set credits from /auth/me
         setCredits(meRes.data?.credits ?? 0);
       } catch (err) {
-        console.error("PATIENT DASHBOARD ERROR:", err);
         setError(
-          err?.response?.data?.message || err.message || "Something went wrong"
+          err?.response?.data?.message ||
+            err.message ||
+            t("errors.generic")
         );
       } finally {
         setLoading(false);
@@ -75,9 +73,8 @@ const PatientDashboard = () => {
     };
 
     fetchSummary();
-  }, []);
+  }, [navigate, t]);
 
-  // 🔥 THIS IS YOUR FUNCTION, wired in:
   const handleFileSubmit = async (e, file) => {
     e.preventDefault();
     setAnalysisError("");
@@ -85,7 +82,6 @@ const PatientDashboard = () => {
 
     try {
       const { report, remainingCredits } = await analyzeReportFile(file);
-
       setSummary(report.summary);
       setMedicalTerms(report.medicalTerms);
       setCharts(report.charts);
@@ -94,7 +90,7 @@ const PatientDashboard = () => {
       if (err?.response?.status === 402) {
         navigate("/plans");
       } else {
-        setAnalysisError("Failed to analyze report.");
+        setAnalysisError(t("errors.analysisFailed"));
       }
     } finally {
       setAnalyzing(false);
@@ -102,7 +98,11 @@ const PatientDashboard = () => {
   };
 
   if (loading) {
-    return <p className="text-gray-500 px-4 py-4">Loading dashboard...</p>;
+    return (
+      <p className="text-gray-500 px-4 py-4">
+        {t("loading")}
+      </p>
+    );
   }
 
   if (error) {
@@ -116,46 +116,52 @@ const PatientDashboard = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">My Health Overview</h1>
+        <h1 className="text-2xl font-semibold">
+          {t("heading")}
+        </h1>
         <div className="text-sm">
-          Credits:{" "}
-          <span className="font-semibold text-green-600">{credits}</span>
+          {t("credits")}{" "}
+          <span className="font-semibold text-green-600">
+            {credits}
+          </span>
         </div>
       </div>
 
-      {/* stats */}
-      <div className="grid gap-4 mb-2 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <DashboardCard
-          label="Total appointments"
+          label={t("stats.totalAppointments")}
           value={stats?.totalAppointments ?? 0}
         />
         <DashboardCard
-          label="Upcoming appointments"
+          label={t("stats.upcomingAppointments")}
           value={stats?.upcomingAppointments ?? 0}
         />
       </div>
 
-      {/* upcoming appointments */}
       <div className="bg-white rounded-xl shadow p-4">
-        <h2 className="text-lg font-medium mb-3">Upcoming appointments</h2>
+        <h2 className="text-lg font-medium mb-3">
+          {t("upcoming.title")}
+        </h2>
+
         {upcoming.length === 0 ? (
-          <p className="text-sm text-gray-500">No upcoming appointments.</p>
+          <p className="text-sm text-gray-500">
+            {t("upcoming.none")}
+          </p>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-left text-gray-500 border-b">
               <tr>
-                <th className="py-2">Doctor</th>
-                <th className="py-2">Email</th>
-                <th className="py-2">Date & time</th>
-                <th className="py-2">Status</th>
+                <th className="py-2">{t("table.doctor")}</th>
+                <th className="py-2">{t("table.email")}</th>
+                <th className="py-2">{t("table.datetime")}</th>
+                <th className="py-2">{t("table.status")}</th>
               </tr>
             </thead>
-
             <tbody>
               {upcoming.map((appt) => (
                 <tr key={appt._id} className="border-b last:border-b-0">
                   <td className="py-2">
-                    {appt.doctor?.name || "Unknown doctor"}
+                    {appt.doctor?.name || t("table.unknownDoctor")}
                   </td>
                   <td className="py-2 text-gray-500">
                     {appt.doctor?.email || "-"}
@@ -170,8 +176,6 @@ const PatientDashboard = () => {
           </table>
         )}
       </div>
-
-      
     </div>
   );
 };
