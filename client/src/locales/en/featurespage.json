@@ -1,0 +1,42 @@
+{
+  "title": "All-in-One Patient Management Solution",
+  "subtitle": "Streamline your clinic operations and enhance patient care with our intelligent, secure, and user-friendly platform.",
+  "items": {
+    "1": {
+      "title": "Comprehensive Patient Records",
+      "description": "Keep all patient information in one secure place from personal details and medical history to prescriptions and lab results. Access data instantly and reduce paperwork."
+    },
+    "2": {
+      "title": "Smart Appointment Scheduling",
+      "description": "Easily manage appointments with a drag-and-drop calendar. Reduce no-shows with automated reminders for both patients and doctors."
+    },
+    "3": {
+      "title": "Secure Patient Communication",
+      "description": "Enable seamless communication through built-in messaging or email notifications. Doctors and patients can exchange updates, prescriptions, and reports safely."
+    },
+    "4": {
+      "title": "Analytics & Reports Dashboard",
+      "description": "Get actionable insights into clinic performance, patient trends, and doctor productivity. Export data to PDF or Excel for sharing and record-keeping."
+    },
+    "5": {
+      "title": "Prescription Management",
+      "description": "Generate and manage prescriptions digitally. Patients can view and download prescriptions anytime, while doctors save time with reusable templates."
+    },
+    "6": {
+      "title": "Billing & Invoicing",
+      "description": "Simplify your clinic’s financial workflows. Automatically generate bills, accept multiple payment methods, and track outstanding balances with ease."
+    },
+    "7": {
+      "title": "Data Security & Compliance",
+      "description": "Your data is fully encrypted and stored on secure servers. Our system complies with healthcare privacy standards (HIPAA/GDPR) to ensure patient confidentiality."
+    },
+    "8": {
+      "title": "Role-Based Access Control",
+      "description": "Grant the right access to the right people whether doctors, nurses, receptionists, or admins. Control permissions for maximum security and efficiency."
+    },
+    "9": {
+      "title": "Integration-Ready",
+      "description": "Connect easily with lab systems, pharmacy software, or hospital ERP tools. Our open API lets you integrate without friction."
+    }
+  }
+}

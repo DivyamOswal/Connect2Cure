@@ -47,10 +47,15 @@ import enFooter from "./locales/en/footer.json";
 import hiFooter from "./locales/hi/footer.json";
 import mrFooter from "./locales/mr/footer.json";
 
-// ✅ Find Doctors page
+// Find Doctors page
 import enFindDoctors from "./locales/en/finddoctors.json";
 import hiFindDoctors from "./locales/hi/finddoctors.json";
 import mrFindDoctors from "./locales/mr/finddoctors.json";
+
+// Features page
+import enFeaturesPage from "./locales/en/featurespage.json";
+import hiFeaturesPage from "./locales/hi/featurespage.json";
+import mrFeaturesPage from "./locales/mr/featurespage.json";
 
 i18n
   .use(LanguageDetector)
@@ -67,7 +72,8 @@ i18n
         benefits: enBenefits,
         getstarted: enGetStarted,
         footer: enFooter,
-        finddoctors: enFindDoctors
+        finddoctors: enFindDoctors,
+        featurespage: enFeaturesPage,
       },
       hi: {
         navbar: hiNavbar,
@@ -79,7 +85,8 @@ i18n
         benefits: hiBenefits,
         getstarted: hiGetStarted,
         footer: hiFooter,
-        finddoctors: hiFindDoctors
+        finddoctors: hiFindDoctors,
+        featurespage: hiFeaturesPage,
       },
       mr: {
         navbar: mrNavbar,
@@ -91,8 +98,9 @@ i18n
         benefits: mrBenefits,
         getstarted: mrGetStarted,
         footer: mrFooter,
-        finddoctors: mrFindDoctors
-      }
+        finddoctors: mrFindDoctors,
+        featurespage: mrFeaturesPage,
+      },
     },
 
     fallbackLng: "en",
@@ -107,14 +115,15 @@ i18n
       "benefits",
       "getstarted",
       "footer",
-      "finddoctors"
+      "finddoctors",
+      "featurespage",
     ],
 
     defaultNS: "navbar",
 
     interpolation: {
-      escapeValue: false
-    }
+      escapeValue: false,
+    },
   });
 
 export default i18n;
