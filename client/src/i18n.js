@@ -2,50 +2,55 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 
-// Navbar translations
+// Navbar
 import enNavbar from "./locales/en/navbar.json";
 import hiNavbar from "./locales/hi/navbar.json";
 import mrNavbar from "./locales/mr/navbar.json";
 
-// Hero translations
+// Hero
 import enHero from "./locales/en/hero.json";
 import hiHero from "./locales/hi/hero.json";
 import mrHero from "./locales/mr/hero.json";
 
-// Home Features translations
+// Home Features
 import enFeatures from "./locales/en/homefeatures.json";
 import hiFeatures from "./locales/hi/homefeatures.json";
 import mrFeatures from "./locales/mr/homefeatures.json";
 
-// Meet Doctors translations
+// Meet Doctors (home section)
 import enDoctors from "./locales/en/meetdoctors.json";
 import hiDoctors from "./locales/hi/meetdoctors.json";
 import mrDoctors from "./locales/mr/meetdoctors.json";
 
-// About System translations
+// About
 import enAbout from "./locales/en/aboutsystem.json";
 import hiAbout from "./locales/hi/aboutsystem.json";
 import mrAbout from "./locales/mr/aboutsystem.json";
 
-// Dashboard Overview translations
+// Dashboard
 import enDashboard from "./locales/en/dashboardoverview.json";
 import hiDashboard from "./locales/hi/dashboardoverview.json";
 import mrDashboard from "./locales/mr/dashboardoverview.json";
 
-// ✅ Benefits translations (THIS WAS MISSING)
+// Benefits
 import enBenefits from "./locales/en/benefits.json";
 import hiBenefits from "./locales/hi/benefits.json";
 import mrBenefits from "./locales/mr/benefits.json";
 
+// Get Started
 import enGetStarted from "./locales/en/getstarted.json";
 import hiGetStarted from "./locales/hi/getstarted.json";
 import mrGetStarted from "./locales/mr/getstarted.json";
 
+// Footer
 import enFooter from "./locales/en/footer.json";
 import hiFooter from "./locales/hi/footer.json";
 import mrFooter from "./locales/mr/footer.json";
 
-
+// ✅ Find Doctors page
+import enFindDoctors from "./locales/en/finddoctors.json";
+import hiFindDoctors from "./locales/hi/finddoctors.json";
+import mrFindDoctors from "./locales/mr/finddoctors.json";
 
 i18n
   .use(LanguageDetector)
@@ -61,7 +66,8 @@ i18n
         dashboard: enDashboard,
         benefits: enBenefits,
         getstarted: enGetStarted,
-        footer: enFooter
+        footer: enFooter,
+        finddoctors: enFindDoctors
       },
       hi: {
         navbar: hiNavbar,
@@ -72,7 +78,8 @@ i18n
         dashboard: hiDashboard,
         benefits: hiBenefits,
         getstarted: hiGetStarted,
-        footer: hiFooter
+        footer: hiFooter,
+        finddoctors: hiFindDoctors
       },
       mr: {
         navbar: mrNavbar,
@@ -83,27 +90,26 @@ i18n
         dashboard: mrDashboard,
         benefits: mrBenefits,
         getstarted: mrGetStarted,
-        footer: mrFooter
+        footer: mrFooter,
+        finddoctors: mrFindDoctors
       }
     },
 
     fallbackLng: "en",
 
-    // ALL namespaces used in the app
     ns: [
-  "navbar",
-  "hero",
-  "features",
-  "doctors",
-  "about",
-  "dashboard",
-  "benefits",
-  "getstarted",
-  "footer"
-],
+      "navbar",
+      "hero",
+      "features",
+      "doctors",
+      "about",
+      "dashboard",
+      "benefits",
+      "getstarted",
+      "footer",
+      "finddoctors"
+    ],
 
-
-    // Default namespace
     defaultNS: "navbar",
 
     interpolation: {

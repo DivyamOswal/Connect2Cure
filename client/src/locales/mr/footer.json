@@ -1,21 +1,21 @@
 {
-  "description": "रोगी देखभाल, अपॉइंटमेंट और मेडिकल रिकॉर्ड के लिए आपका एकमात्र समाधान।",
+  "description": "रुग्ण सेवा, अपॉइंटमेंट आणि वैद्यकीय नोंदींसाठी एक परिपूर्ण समाधान.",
   "sections": {
-    "explore": "एक्सप्लोर करें",
+    "explore": "एक्सप्लोर",
     "company": "कंपनी",
-    "support": "सहायता",
+    "support": "मदत",
     "socials": "सोशल"
   },
   "links": {
     "doctors": "डॉक्टर",
-    "features": "विशेषताएँ",
-    "about": "हमारे बारे में",
-    "contact": "संपर्क करें",
+    "features": "वैशिष्ट्ये",
+    "about": "आमच्याबद्दल",
+    "contact": "संपर्क",
     "login": "लॉगिन",
-    "faq": "सामान्य प्रश्न",
-    "help": "हेल्प सेंटर",
-    "terms": "नियम व गोपनीयता"
+    "faq": "प्रश्न",
+    "help": "मदत केंद्र",
+    "terms": "अटी व गोपनीयता"
   },
-  "companyInfo": "Connect2Cure, Connect2Cure HealthTech Solutions का हिस्सा है, जो डिजिटल हेल्थकेयर सेवाओं का अग्रणी प्रदाता है।",
-  "rights": "सभी अधिकार सुरक्षित।"
+  "companyInfo": "Connect2Cure हे Connect2Cure HealthTech Solutions चा भाग आहे, जे डिजिटल हेल्थकेअर सेवा पुरवते.",
+  "rights": "सर्व हक्क राखीव."
 }
