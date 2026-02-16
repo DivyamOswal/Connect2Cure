@@ -1,0 +1,9 @@
+{
+  "title": "My Appointments",
+  "empty": "No appointments yet.",
+
+  "doctorFallback": "Doctor",
+  "at": "at",
+  "status": "Status",
+  "fee": "Fee"
+}

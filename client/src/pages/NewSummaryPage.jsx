@@ -1,8 +1,8 @@
-// src/pages/NewSummaryPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
-import { analyzeReport, analyzeReportFile } from "../api/reportApi"; // 👈 UPDATED
+import { analyzeReport, analyzeReportFile } from "../api/reportApi";
 import { getMe } from "../api/userApi";
 
 import ReportForm from "../components/ReportForm";
@@ -12,6 +12,7 @@ import ReportActions from "../components/ReportActions";
 
 export default function NewSummaryPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation("summary");
 
   const [reportText, setReportText] = useState("");
   const [report, setReport] = useState(null);
@@ -28,22 +29,18 @@ export default function NewSummaryPage() {
         const user = await getMe();
         setCredits(user.credits ?? 0);
       } catch (err) {
-        console.error("getMe error:", err);
-
         if (err?.response?.status === 401) {
           navigate("/login/patient");
-          return;
+        } else {
+          setError(
+            err?.response?.data?.message ||
+              t("errors.loadUser")
+          );
         }
-
-        setError(
-          err?.response?.data?.message ||
-            "Failed to load user information."
-        );
       }
     })();
-  }, [navigate]);
+  }, [navigate, t]);
 
-  // 👉 TEXT submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -53,16 +50,12 @@ export default function NewSummaryPage() {
       const { report: r, remainingCredits } =
         await analyzeReport(reportText);
 
-      console.log("charts from backend (text):", r.charts);
-
       setReport(r);
       setSummary(r.summary);
       setMedicalTerms(r.medicalTerms || []);
       setCharts(r.charts || null);
       setCredits(remainingCredits);
     } catch (err) {
-      console.error("analyzeReport error:", err);
-
       if (err?.response?.status === 401) {
         navigate("/login/patient");
       } else if (err?.response?.status === 402) {
@@ -70,7 +63,7 @@ export default function NewSummaryPage() {
       } else {
         setError(
           err?.response?.data?.message ||
-            "Something went wrong while analyzing."
+            t("errors.analyzeText")
         );
       }
     } finally {
@@ -78,13 +71,12 @@ export default function NewSummaryPage() {
     }
   };
 
-  // 👉 FILE submit
   const handleFileSubmit = async (e, file) => {
     e.preventDefault();
     setError("");
 
     if (!file) {
-      setError("Please select a file to upload.");
+      setError(t("errors.noFile"));
       return;
     }
 
@@ -94,16 +86,12 @@ export default function NewSummaryPage() {
       const { report: r, remainingCredits } =
         await analyzeReportFile(file);
 
-      console.log("charts from backend (file):", r.charts);
-
       setReport(r);
       setSummary(r.summary);
       setMedicalTerms(r.medicalTerms || []);
       setCharts(r.charts || null);
       setCredits(remainingCredits);
     } catch (err) {
-      console.error("analyzeReportFile error:", err);
-
       if (err?.response?.status === 401) {
         navigate("/login/patient");
       } else if (err?.response?.status === 402) {
@@ -111,7 +99,7 @@ export default function NewSummaryPage() {
       } else {
         setError(
           err?.response?.data?.message ||
-            "Something went wrong while analyzing the file."
+            t("errors.analyzeFile")
         );
       }
     } finally {
@@ -123,10 +111,10 @@ export default function NewSummaryPage() {
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
       <header className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">
-          AI Medical Summary
+          {t("title")}
         </h1>
         <p className="text-sm">
-          Credits:{" "}
+          {t("credits")}{" "}
           <span className="font-semibold text-green-600">
             {credits}
           </span>
@@ -139,10 +127,9 @@ export default function NewSummaryPage() {
         </p>
       )}
 
-      {/* 🔹 Option 1: Paste text */}
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">
-          Option 1: Paste medical report text
+          {t("option1.title")}
         </h2>
         <ReportForm
           reportText={reportText}
@@ -152,30 +139,20 @@ export default function NewSummaryPage() {
         />
       </section>
 
-      {/* 🔹 Option 2: Upload report file */}
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">
-          Option 2: Upload medical report file
+          {t("option2.title")}
         </h2>
         <ReportForm
-          handleFileSubmit={handleFileSubmit} // 👈 triggers FILE MODE of ReportForm
+          handleFileSubmit={handleFileSubmit}
           loading={loading}
         />
       </section>
 
-      <ReportSummary
-        summary={summary}
-        medicalTerms={medicalTerms}
-      />
+      <ReportSummary summary={summary} medicalTerms={medicalTerms} />
+      <ChartsSection charts={charts} medicalTerms={medicalTerms} />
 
-      <ChartsSection
-        charts={charts}
-        medicalTerms={medicalTerms}
-      />
-
-      {report && (
-        <ReportActions report={report} />
-      )}
+      {report && <ReportActions report={report} />}
     </div>
   );
 }

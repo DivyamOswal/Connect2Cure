@@ -1,0 +1,20 @@
+{
+  "title": "Choose a Plan",
+  "creditsLabel": "{{count}} Summary Credits",
+  "buyNow": "Buy Now",
+  "error": "Could not start checkout.",
+  "plans": {
+    "basic": {
+      "name": "Basic",
+      "price": "₹199"
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "₹599"
+    },
+    "premium": {
+      "name": "Premium",
+      "price": "₹1499"
+    }
+  }
+}

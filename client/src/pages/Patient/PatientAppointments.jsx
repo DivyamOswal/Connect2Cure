@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import api from "../../api/axios";
 
 const PatientAppointments = () => {
+  const { t } = useTranslation("patientappointments");
   const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
     api
       .get("/appointments/my")
-      .then((res) => setAppointments(res.data))
+      .then((res) => setAppointments(res.data || []))
       .catch((err) => {
         console.error("Failed to load patient appointments", err);
       });
@@ -15,10 +17,14 @@ const PatientAppointments = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">My Appointments</h1>
+      <h1 className="text-xl font-bold mb-4">
+        {t("title")}
+      </h1>
 
       {appointments.length === 0 && (
-        <p className="text-gray-600">No appointments yet.</p>
+        <p className="text-gray-600">
+          {t("empty")}
+        </p>
       )}
 
       <div className="space-y-3">
@@ -29,18 +35,23 @@ const PatientAppointments = () => {
           >
             <div>
               <p className="font-semibold">
-                {a.doctor?.name || "Doctor"}
+                {a.doctor?.name || t("doctorFallback")}
               </p>
               <p className="text-sm text-gray-600">
-                {a.date} at {a.time}
+                {a.date} {t("at")} {a.time}
               </p>
               <p className="text-sm text-gray-600">
-                Status: {a.status}
+                {t("status")}: {a.status}
               </p>
             </div>
+
             <div className="text-right">
-              <p className="text-sm text-gray-700">Fee</p>
-              <p className="font-semibold">₹{a.fee}</p>
+              <p className="text-sm text-gray-700">
+                {t("fee")}
+              </p>
+              <p className="font-semibold">
+                ₹{a.fee}
+              </p>
             </div>
           </div>
         ))}

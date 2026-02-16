@@ -77,6 +77,25 @@ import enPatientDoctor from "./locales/en/patientdoctor.json";
 import hiPatientDoctor from "./locales/hi/patientdoctor.json";
 import mrPatientDoctor from "./locales/mr/patientdoctor.json";
 
+// Patient Appointments
+import enPatientAppointments from "./locales/en/patientappointments.json";
+import hiPatientAppointments from "./locales/hi/patientappointments.json";
+import mrPatientAppointments from "./locales/mr/patientappointments.json";
+
+// Patient Summary
+import enSummary from "./locales/en/summary.json";
+import hiSummary from "./locales/hi/summary.json";
+import mrSummary from "./locales/mr/summary.json";
+
+// Patient Billing
+import enBilling from "./locales/en/billing.json";
+import hiBilling from "./locales/hi/billing.json";
+import mrBilling from "./locales/mr/billing.json";
+
+// Patient Billings
+import enPlans from "./locales/en/plans.json";
+import hiPlans from "./locales/hi/plans.json";
+import mrPlans from "./locales/mr/plans.json";
 
 
 i18n
@@ -99,7 +118,13 @@ i18n
         aboutpage: enAboutPage,
         contact: enContact,
         patientdashboard: enPatientDashboard,
-        patientdoctor: enPatientDoctor
+        patientdoctor: enPatientDoctor,
+        patientappointments: enPatientAppointments,
+        summary: enSummary,
+        billing: enBilling,
+        plans: enPlans
+
+
 
       },
       hi: {
@@ -117,7 +142,13 @@ i18n
         aboutpage: hiAboutPage,
         contact: hiContact,
         patientdashboard: hiPatientDashboard,
-        patientdoctor: hiPatientDoctor
+        patientdoctor: hiPatientDoctor,
+        patientappointments: hiPatientAppointments,
+        summary: hiSummary,
+        billing: hiBilling,
+        plans: hiPlans
+
+
 
 
       },
@@ -136,7 +167,13 @@ i18n
         aboutpage: mrAboutPage,
         contact: mrContact,
         patientdashboard: mrPatientDashboard,
-        patientdoctor: mrPatientDoctor
+        patientdoctor: mrPatientDoctor,
+        patientappointments: mrPatientAppointments,
+        summary: mrSummary,
+        billing: mrBilling,
+        plans: mrPlans
+
+
 
 
       },
@@ -159,7 +196,10 @@ i18n
       "aboutpage",
       "contact",
       "patientdashboard",
-      "patientdoctor"
+      "patientdoctor",
+      "patientappointments",
+      "billing"
+
 
 
     ],

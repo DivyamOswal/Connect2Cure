@@ -1,0 +1,43 @@
+{
+  "title": "Billing & Payments",
+  "subtitle": "View your appointment payments and credit purchases.",
+  "loading": "Loading billing...",
+  "credits": "credits",
+  "creditsTitle": "Credit purchases (plans)",
+  "creditsEmpty": "No credit purchases yet. Buy credits from",
+  "plansLink": "Plans",
+  "unknownDoctor": "Unknown doctor",
+
+  "summary": {
+    "totalPaid": "Total paid for appointments",
+    "totalAppointments": "Paid appointments",
+    "totalCredits": "Total credits purchased"
+  },
+
+  "appointments": {
+    "title": "Appointment payments",
+    "empty": "No paid appointments yet."
+  },
+
+  "table": {
+    "doctor": "Doctor",
+    "datetime": "Date & time",
+    "amount": "Amount",
+    "status": "Status",
+    "paymentId": "Payment ID",
+    "paidAt": "Paid at",
+    "date": "Date",
+    "plan": "Plan",
+    "credits": "Credits"
+  },
+
+  "plans": {
+    "basic": "Basic plan",
+    "pro": "Pro plan",
+    "premium": "Premium plan"
+  },
+
+  "errors": {
+    "generic": "Something went wrong"
+  }
+}
