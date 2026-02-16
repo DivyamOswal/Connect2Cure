@@ -1,0 +1,50 @@
+{
+  "loading": "Loading profile...",
+  "loadError": "Unable to load profile.",
+  "title": "My Profile",
+  "roleLabel": "Role",
+  "roles": {
+    "doctor": "Doctor",
+    "patient": "Patient"
+  },
+  "basicInfo": "Basic information",
+  "patientDetails": "Patient details",
+  "doctorDetails": "Doctor details",
+
+  "labels": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "dob": "Date of birth",
+    "gender": "Gender",
+    "bloodGroup": "Blood group",
+    "address": "Address",
+    "knownConditions": "Known conditions (comma separated)",
+    "specialization": "Specialization",
+    "license": "License number",
+    "experience": "Years of experience",
+    "clinicName": "Clinic / Hospital name",
+    "clinicAddress": "Clinic address"
+  },
+
+  "placeholders": {
+    "name": "Your name",
+    "email": "Your email",
+    "bloodGroup": "e.g. A+",
+    "conditions": "Diabetes, Hypertension, ..."
+  },
+
+  "genderOptions": {
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
+  },
+
+  "save": "Save profile",
+  "saving": "Saving...",
+  "success": "Profile updated successfully",
+  "errors": {
+    "load": "Could not load profile",
+    "save": "Could not save profile"
+  }
+}

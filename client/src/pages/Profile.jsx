@@ -1,7 +1,9 @@
-// src/pages/Profile.jsx
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const Profile = () => {
+  const { t } = useTranslation("profile");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -10,12 +12,13 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
 
-  // form state
+  // basic info
   const [basic, setBasic] = useState({
     name: "",
     email: "",
   });
 
+  // patient profile
   const [patientProfile, setPatientProfile] = useState({
     phone: "",
     dateOfBirth: "",
@@ -25,6 +28,7 @@ const Profile = () => {
     knownConditions: "",
   });
 
+  // doctor profile
   const [doctorProfile, setDoctorProfile] = useState({
     phone: "",
     specialization: "",
@@ -34,29 +38,24 @@ const Profile = () => {
     clinicAddress: "",
   });
 
-  // fetch profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const accessToken = localStorage.getItem("accessToken");
-        if (!accessToken) {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
           window.location.href = "/login";
           return;
         }
 
-        const API_BASE_URL =
+        const API_BASE =
           import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-        const res = await fetch(`${API_BASE_URL}/profile/me`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+        const res = await fetch(`${API_BASE}/profile/me`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to load profile");
-        }
+        if (!res.ok) throw new Error(data.message);
 
         setUser(data.user);
         setRole(data.user.role);
@@ -76,7 +75,9 @@ const Profile = () => {
             address: data.profile.address || "",
             knownConditions: (data.profile.knownConditions || []).join(", "),
           });
-        } else if (data.user.role === "doctor" && data.profile) {
+        }
+
+        if (data.user.role === "doctor" && data.profile) {
           setDoctorProfile({
             phone: data.profile.phone || "",
             specialization: data.profile.specialization || "",
@@ -87,30 +88,23 @@ const Profile = () => {
           });
         }
       } catch (err) {
-        console.error("PROFILE LOAD ERROR:", err);
-        setError(err.message || "Could not load profile");
+        setError(t("errors.load"));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [t]);
 
-  const handleBasicChange = (e) => {
-    const { name, value } = e.target;
-    setBasic((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleBasicChange = (e) =>
+    setBasic({ ...basic, [e.target.name]: e.target.value });
 
-  const handlePatientChange = (e) => {
-    const { name, value } = e.target;
-    setPatientProfile((prev) => ({ ...prev, [name]: value }));
-  };
+  const handlePatientChange = (e) =>
+    setPatientProfile({ ...patientProfile, [e.target.name]: e.target.value });
 
-  const handleDoctorChange = (e) => {
-    const { name, value } = e.target;
-    setDoctorProfile((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleDoctorChange = (e) =>
+    setDoctorProfile({ ...doctorProfile, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -119,8 +113,8 @@ const Profile = () => {
     setMessage("");
 
     try {
-      const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
         window.location.href = "/login";
         return;
       }
@@ -138,7 +132,9 @@ const Profile = () => {
             ? patientProfile.knownConditions.split(",").map((s) => s.trim())
             : [],
         };
-      } else if (role === "doctor") {
+      }
+
+      if (role === "doctor") {
         profilePayload = {
           phone: doctorProfile.phone,
           specialization: doctorProfile.specialization,
@@ -149,14 +145,14 @@ const Profile = () => {
         };
       }
 
-      const API_BASE_URL =
+      const API_BASE =
         import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-      const res = await fetch(`${API_BASE_URL}/profile/me`, {
+      const res = await fetch(`${API_BASE}/profile/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: basic.name,
@@ -166,53 +162,49 @@ const Profile = () => {
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to update profile");
-      }
+      if (!res.ok) throw new Error(data.message);
 
-      setMessage("Profile updated successfully");
+      setMessage(t("success"));
       setUser((prev) => ({ ...prev, ...data.user }));
     } catch (err) {
-      console.error("PROFILE SAVE ERROR:", err);
-      setError(err.message || "Could not save profile");
+      setError(t("errors.save"));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  if (loading)
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <p className="text-gray-500">Loading profile...</p>
+        <p className="text-gray-500">{t("loading")}</p>
       </div>
     );
-  }
 
-  if (!user) {
+  if (!user)
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <p className="text-red-500">Unable to load profile.</p>
+        <p className="text-red-500">{t("loadError")}</p>
       </div>
     );
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-semibold mb-2">My Profile</h2>
+      <h2 className="text-2xl font-semibold mb-2">{t("title")}</h2>
       <p className="text-gray-500 mb-6">
-        Role:{" "}
+        {t("roleLabel")}:{" "}
         <span className="font-medium capitalize">
-          {role === "doctor" ? "Doctor" : "Patient"}
+          {t(`roles.${role}`)}
         </span>
       </p>
 
       {error && (
-        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border rounded-lg px-3 py-2">
           {error}
         </div>
       )}
+
       {message && (
-        <div className="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+        <div className="mb-4 text-sm text-green-700 bg-green-50 border rounded-lg px-3 py-2">
           {message}
         </div>
       )}
@@ -221,190 +213,146 @@ const Profile = () => {
         onSubmit={handleSubmit}
         className="space-y-6 bg-white p-5 rounded-xl shadow"
       >
-        {/* Basic info */}
+        {/* BASIC INFO */}
         <div>
-          <h3 className="text-lg font-medium mb-3">Basic information</h3>
+          <h3 className="text-lg font-medium mb-3">{t("basicInfo")}</h3>
           <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Name</label>
-              <input
-                name="name"
-                value={basic.name}
-                onChange={handleBasicChange}
-                className="w-full border rounded-lg px-3 py-2 text-sm"
-                placeholder="Your name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Email</label>
-              <input
-                name="email"
-                type="email"
-                value={basic.email}
-                onChange={handleBasicChange}
-                className="w-full border rounded-lg px-3 py-2 text-sm"
-                placeholder="Your email"
-              />
-            </div>
+            <input
+              name="name"
+              value={basic.name}
+              onChange={handleBasicChange}
+              placeholder={t("placeholders.name")}
+              className="border rounded-lg px-3 py-2 text-sm"
+            />
+            <input
+              name="email"
+              value={basic.email}
+              onChange={handleBasicChange}
+              placeholder={t("placeholders.email")}
+              className="border rounded-lg px-3 py-2 text-sm"
+            />
           </div>
         </div>
 
-        {/* Role-specific section */}
+        {/* PATIENT */}
         {role === "patient" && (
           <div>
-            <h3 className="text-lg font-medium mb-3">Patient details</h3>
+            <h3 className="text-lg font-medium mb-3">
+              {t("patientDetails")}
+            </h3>
+
             <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Phone
-                </label>
-                <input
-                  name="phone"
-                  value={patientProfile.phone}
-                  onChange={handlePatientChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Date of birth
-                </label>
-                <input
-                  type="date"
-                  name="dateOfBirth"
-                  value={patientProfile.dateOfBirth}
-                  onChange={handlePatientChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Gender
-                </label>
-                <select
-                  name="gender"
-                  value={patientProfile.gender}
-                  onChange={handlePatientChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Blood group
-                </label>
-                <input
-                  name="bloodGroup"
-                  value={patientProfile.bloodGroup}
-                  onChange={handlePatientChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="e.g. A+"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600 mb-1">
-                  Address
-                </label>
-                <input
-                  name="address"
-                  value={patientProfile.address}
-                  onChange={handlePatientChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600 mb-1">
-                  Known conditions (comma separated)
-                </label>
-                <textarea
-                  name="knownConditions"
-                  value={patientProfile.knownConditions}
-                  onChange={handlePatientChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  rows={2}
-                  placeholder="Diabetes, Hypertension, ..."
-                />
-              </div>
+              <input
+                name="phone"
+                value={patientProfile.phone}
+                onChange={handlePatientChange}
+                placeholder={t("labels.phone")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={patientProfile.dateOfBirth}
+                onChange={handlePatientChange}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <select
+                name="gender"
+                value={patientProfile.gender}
+                onChange={handlePatientChange}
+                className="border rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="male">{t("genderOptions.male")}</option>
+                <option value="female">{t("genderOptions.female")}</option>
+                <option value="other">{t("genderOptions.other")}</option>
+              </select>
+
+              <input
+                name="bloodGroup"
+                value={patientProfile.bloodGroup}
+                onChange={handlePatientChange}
+                placeholder={t("placeholders.bloodGroup")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <input
+                name="address"
+                value={patientProfile.address}
+                onChange={handlePatientChange}
+                placeholder={t("labels.address")}
+                className="border rounded-lg px-3 py-2 text-sm md:col-span-2"
+              />
+
+              <textarea
+                name="knownConditions"
+                value={patientProfile.knownConditions}
+                onChange={handlePatientChange}
+                placeholder={t("placeholders.conditions")}
+                rows={2}
+                className="border rounded-lg px-3 py-2 text-sm md:col-span-2"
+              />
             </div>
           </div>
         )}
 
+        {/* DOCTOR */}
         {role === "doctor" && (
           <div>
-            <h3 className="text-lg font-medium mb-3">Doctor details</h3>
+            <h3 className="text-lg font-medium mb-3">
+              {t("doctorDetails")}
+            </h3>
+
             <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Phone
-                </label>
-                <input
-                  name="phone"
-                  value={doctorProfile.phone}
-                  onChange={handleDoctorChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Specialization
-                </label>
-                <input
-                  name="specialization"
-                  value={doctorProfile.specialization}
-                  onChange={handleDoctorChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Cardiologist, Dermatologist, ..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  License number
-                </label>
-                <input
-                  name="licenseNumber"
-                  value={doctorProfile.licenseNumber}
-                  onChange={handleDoctorChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Years of experience
-                </label>
-                <input
-                  name="yearsOfExperience"
-                  value={doctorProfile.yearsOfExperience}
-                  onChange={handleDoctorChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  type="number"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Clinic / Hospital name
-                </label>
-                <input
-                  name="clinicName"
-                  value={doctorProfile.clinicName}
-                  onChange={handleDoctorChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Clinic address
-                </label>
-                <input
-                  name="clinicAddress"
-                  value={doctorProfile.clinicAddress}
-                  onChange={handleDoctorChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
+              <input
+                name="phone"
+                value={doctorProfile.phone}
+                onChange={handleDoctorChange}
+                placeholder={t("labels.phone")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <input
+                name="specialization"
+                value={doctorProfile.specialization}
+                onChange={handleDoctorChange}
+                placeholder={t("labels.specialization")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <input
+                name="licenseNumber"
+                value={doctorProfile.licenseNumber}
+                onChange={handleDoctorChange}
+                placeholder={t("labels.license")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <input
+                type="number"
+                name="yearsOfExperience"
+                value={doctorProfile.yearsOfExperience}
+                onChange={handleDoctorChange}
+                placeholder={t("labels.experience")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <input
+                name="clinicName"
+                value={doctorProfile.clinicName}
+                onChange={handleDoctorChange}
+                placeholder={t("labels.clinicName")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
+
+              <input
+                name="clinicAddress"
+                value={doctorProfile.clinicAddress}
+                onChange={handleDoctorChange}
+                placeholder={t("labels.clinicAddress")}
+                className="border rounded-lg px-3 py-2 text-sm"
+              />
             </div>
           </div>
         )}
@@ -413,9 +361,9 @@ const Profile = () => {
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 rounded-full bg-[#FF8040] text-white text-sm font-medium hover:opacity-90 disabled:opacity-60"
+            className="px-5 py-2 rounded-full bg-[#FF8040] text-white text-sm font-medium disabled:opacity-60"
           >
-            {saving ? "Saving..." : "Save profile"}
+            {saving ? t("saving") : t("save")}
           </button>
         </div>
       </form>

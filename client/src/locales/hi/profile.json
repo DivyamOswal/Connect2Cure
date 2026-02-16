@@ -1,0 +1,50 @@
+{
+  "loading": "प्रोफ़ाइल लोड हो रही है...",
+  "loadError": "प्रोफ़ाइल लोड नहीं हो सकी।",
+  "title": "मेरी प्रोफ़ाइल",
+  "roleLabel": "भूमिका",
+  "roles": {
+    "doctor": "डॉक्टर",
+    "patient": "मरीज़"
+  },
+  "basicInfo": "मूल जानकारी",
+  "patientDetails": "मरीज़ विवरण",
+  "doctorDetails": "डॉक्टर विवरण",
+
+  "labels": {
+    "name": "नाम",
+    "email": "ईमेल",
+    "phone": "फ़ोन",
+    "dob": "जन्म तिथि",
+    "gender": "लिंग",
+    "bloodGroup": "ब्लड ग्रुप",
+    "address": "पता",
+    "knownConditions": "ज्ञात बीमारियाँ (कॉमा से अलग)",
+    "specialization": "विशेषज्ञता",
+    "license": "लाइसेंस नंबर",
+    "experience": "अनुभव (वर्ष)",
+    "clinicName": "क्लिनिक / अस्पताल का नाम",
+    "clinicAddress": "क्लिनिक का पता"
+  },
+
+  "placeholders": {
+    "name": "आपका नाम",
+    "email": "आपका ईमेल",
+    "bloodGroup": "जैसे A+",
+    "conditions": "डायबिटीज़, हाई बीपी, ..."
+  },
+
+  "genderOptions": {
+    "male": "पुरुष",
+    "female": "महिला",
+    "other": "अन्य"
+  },
+
+  "save": "प्रोफ़ाइल सहेजें",
+  "saving": "सहेजा जा रहा है...",
+  "success": "प्रोफ़ाइल सफलतापूर्वक अपडेट हुई",
+  "errors": {
+    "load": "प्रोफ़ाइल लोड नहीं हो सकी",
+    "save": "प्रोफ़ाइल सहेज नहीं पाए"
+  }
+}

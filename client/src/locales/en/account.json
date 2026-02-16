@@ -1,0 +1,16 @@
+{
+  "title": "Account",
+  "fields": {
+    "name": "Name",
+    "email": "Email"
+  },
+  "placeholders": {
+    "name": "Your name"
+  },
+  "save": "Save",
+  "saving": "Saving...",
+  "messages": {
+    "saved": "Saved",
+    "error": "Error saving"
+  }
+}

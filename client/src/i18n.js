@@ -97,6 +97,20 @@ import enPlans from "./locales/en/plans.json";
 import hiPlans from "./locales/hi/plans.json";
 import mrPlans from "./locales/mr/plans.json";
 
+// Profile page
+import enProfile from "./locales/en/profile.json";
+import hiProfile from "./locales/hi/profile.json";
+import mrProfile from "./locales/mr/profile.json";
+
+// Settings account section
+import enAccount from "./locales/en/account.json";
+import hiAccount from "./locales/hi/account.json";
+import mrAccount from "./locales/mr/account.json";
+
+// Settings password section
+import enPassword from "./locales/en/password.json";
+import hiPassword from "./locales/hi/password.json";
+import mrPassword from "./locales/mr/password.json";
 
 i18n
   .use(LanguageDetector)
@@ -122,7 +136,10 @@ i18n
         patientappointments: enPatientAppointments,
         summary: enSummary,
         billing: enBilling,
-        plans: enPlans
+        plans: enPlans,
+        profile: enProfile,
+        account: enAccount,
+        password: enPassword
 
 
 
@@ -146,7 +163,10 @@ i18n
         patientappointments: hiPatientAppointments,
         summary: hiSummary,
         billing: hiBilling,
-        plans: hiPlans
+        plans: hiPlans,
+        profile: hiProfile,
+        account: hiAccount,
+        password: hiPassword
 
 
 
@@ -171,7 +191,10 @@ i18n
         patientappointments: mrPatientAppointments,
         summary: mrSummary,
         billing: mrBilling,
-        plans: mrPlans
+        plans: mrPlans,
+        profile: mrProfile,
+        account: mrAccount,
+        password: mrPassword
 
 
 
@@ -198,7 +221,10 @@ i18n
       "patientdashboard",
       "patientdoctor",
       "patientappointments",
-      "billing"
+      "billing",
+      "profile",
+      "account",
+      "password"
 
 
 
