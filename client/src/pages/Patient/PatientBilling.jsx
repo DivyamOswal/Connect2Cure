@@ -1,18 +1,20 @@
-// client/src/pages/Patient/PatientBilling.jsx
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import api from "../../api/axios";
 
-const PLAN_NAMES = {
-  basic: "Basic plan",
-  pro: "Pro plan",
-  premium: "Premium plan",
-};
-
 const PatientBilling = () => {
-  const [payments, setPayments] = useState([]); // appointment payments
+  const { t } = useTranslation("billing");
+
+  const PLAN_NAMES = {
+    basic: t("plans.basic"),
+    pro: t("plans.pro"),
+    premium: t("plans.premium"),
+  };
+
+  const [payments, setPayments] = useState([]);
   const [summary, setSummary] = useState({ totalPaid: 0, totalCount: 0 });
 
-  const [creditTxs, setCreditTxs] = useState([]); // plan/credits transactions
+  const [creditTxs, setCreditTxs] = useState([]);
   const [creditSummary, setCreditSummary] = useState({
     totalCredits: 0,
     totalAmount: 0,
@@ -38,7 +40,6 @@ const PatientBilling = () => {
         const appts = apptRes.data || [];
         const txs = txRes.data || [];
 
-        // --- APPOINTMENT PAYMENTS ---
         const paidAppts = appts.filter(
           (a) =>
             a.status === "confirmed" ||
@@ -57,7 +58,6 @@ const PatientBilling = () => {
           totalCount: paidAppts.length,
         });
 
-        // --- CREDIT (PLAN) TRANSACTIONS ---
         const totalCredits = txs.reduce(
           (sum, t) => sum + (t.credits || 0),
           0
@@ -73,9 +73,9 @@ const PatientBilling = () => {
           totalAmount: totalAmountMinor,
         });
       } catch (err) {
-        console.error("PATIENT BILLING ERROR:", err);
         setError(
-          err?.response?.data?.message || err.message || "Something went wrong"
+          err?.response?.data?.message ||
+            t("errors.generic")
         );
       } finally {
         setLoading(false);
@@ -83,10 +83,14 @@ const PatientBilling = () => {
     };
 
     fetchBilling();
-  }, []);
+  }, [t]);
 
   if (loading) {
-    return <p className="text-gray-500 px-4 py-4">Loading billing...</p>;
+    return (
+      <p className="text-gray-500 px-4 py-4">
+        {t("loading")}
+      </p>
+    );
   }
 
   if (error) {
@@ -98,7 +102,7 @@ const PatientBilling = () => {
   }
 
   const formatStripeAmount = (amountMinor, currency = "inr") => {
-    const major = (amountMinor || 0) / 100; // paise -> ₹
+    const major = (amountMinor || 0) / 100;
     const upper = currency?.toUpperCase?.() || "INR";
     if (upper === "INR") return `₹${major.toFixed(2)}`;
     return `${upper} ${major.toFixed(2)}`;
@@ -107,147 +111,120 @@ const PatientBilling = () => {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold mb-2">Billing & Payments</h1>
+        <h1 className="text-2xl font-semibold mb-2">
+          {t("title")}
+        </h1>
         <p className="text-sm text-gray-500 mb-6">
-          View your appointment payment history and credit (plan) purchases.
+          {t("subtitle")}
         </p>
       </div>
 
-      {/* SUMMARY CARDS */}
+      {/* SUMMARY */}
       <div className="grid gap-4 mb-2 sm:grid-cols-3">
         <SummaryCard
-          label="Total paid for appointments"
+          label={t("summary.totalPaid")}
           value={`₹${summary.totalPaid}`}
         />
-        <SummaryCard label="Paid appointments" value={summary.totalCount} />
         <SummaryCard
-          label="Total credits purchased"
-          value={`${creditSummary.totalCredits} credits (${formatStripeAmount(
+          label={t("summary.totalAppointments")}
+          value={summary.totalCount}
+        />
+        <SummaryCard
+          label={t("summary.totalCredits")}
+          value={`${creditSummary.totalCredits} ${t(
+            "credits"
+          )} (${formatStripeAmount(
             creditSummary.totalAmount
           )})`}
         />
       </div>
 
-      {/* APPOINTMENT PAYMENT TABLE */}
+      {/* APPOINTMENTS */}
       <div className="bg-white rounded-xl shadow p-4 space-y-3">
-        <h2 className="text-lg font-medium">Appointment payments</h2>
+        <h2 className="text-lg font-medium">
+          {t("appointments.title")}
+        </h2>
 
         {payments.length === 0 ? (
-          <p className="text-sm text-gray-500">No paid appointments yet.</p>
+          <p className="text-sm text-gray-500">
+            {t("appointments.empty")}
+          </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead className="text-left text-gray-500 border-b">
-                <tr>
-                  <th className="py-2 pr-4">Doctor</th>
-                  <th className="py-2 pr-4">Date & time</th>
-                  <th className="py-2 pr-4">Amount</th>
-                  <th className="py-2 pr-4">Status</th>
-                  <th className="py-2 pr-4">Payment ID</th>
-                  <th className="py-2 pr-4">Paid at</th>
+          <table className="w-full text-sm">
+            <thead className="text-left text-gray-500 border-b">
+              <tr>
+                <th>{t("table.doctor")}</th>
+                <th>{t("table.datetime")}</th>
+                <th>{t("table.amount")}</th>
+                <th>{t("table.status")}</th>
+                <th>{t("table.paymentId")}</th>
+                <th>{t("table.paidAt")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((a) => (
+                <tr key={a._id} className="border-b">
+                  <td>{a.doctor?.name || t("unknownDoctor")}</td>
+                  <td>
+                    {a.date} {a.time && `at ${a.time}`}
+                  </td>
+                  <td>₹{a.fee || a.amount}</td>
+                  <td>{a.paymentStatus || a.status}</td>
+                  <td>{a.transactionId || "-"}</td>
+                  <td>
+                    {a.paidAt
+                      ? new Date(a.paidAt).toLocaleString()
+                      : "-"}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {payments.map((appt) => {
-                  const amount = appt.fee || appt.amount || 0;
-                  const paymentId =
-                    appt.paymentIntentId ||
-                    appt.stripePaymentIntentId ||
-                    appt.transactionId ||
-                    "-";
-                  const paidAt = appt.paidAt || appt.createdAt;
-
-                  return (
-                    <tr
-                      key={appt._id}
-                      className="border-b last:border-b-0 hover:bg-gray-50"
-                    >
-                      <td className="py-2 pr-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {appt.doctor?.name || "Unknown doctor"}
-                          </span>
-                          {appt.doctor?.specialization && (
-                            <span className="text-xs text-gray-500">
-                              {appt.doctor.specialization}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-2 pr-4">
-                        {appt.date} {appt.time && `at ${appt.time}`}
-                      </td>
-                      <td className="py-2 pr-4 font-semibold">₹{amount}</td>
-                      <td className="py-2 pr-4">
-                        <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">
-                          {appt.paymentStatus ? appt.paymentStatus : appt.status}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 text-xs text-gray-600">
-                        {paymentId}
-                      </td>
-                      <td className="py-2 pr-4 text-xs text-gray-600">
-                        {paidAt ? new Date(paidAt).toLocaleString() : "-"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {/* CREDIT / PLAN PURCHASE TABLE */}
+      {/* CREDITS */}
       <div className="bg-white rounded-xl shadow p-4 space-y-3">
-        <h2 className="text-lg font-medium">Credit purchases (plans)</h2>
+        <h2 className="text-lg font-medium">
+          {t("creditsTitle")}
+        </h2>
 
         {creditTxs.length === 0 ? (
           <p className="text-sm text-gray-500">
-            No credit purchases yet. You can buy credits from the{" "}
+            {t("creditsEmpty")}{" "}
             <a href="/plans" className="text-blue-600 underline">
-              Plans
-            </a>{" "}
-            page.
+              {t("plansLink")}
+            </a>
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead className="text-left text-gray-500 border-b">
-                <tr>
-                  <th className="py-2 pr-4">Date</th>
-                  <th className="py-2 pr-4">Plan</th>
-                  <th className="py-2 pr-4">Credits</th>
-                  <th className="py-2 pr-4">Amount</th>
-                  <th className="py-2 pr-4">Status</th>
+          <table className="w-full text-sm">
+            <thead className="text-left text-gray-500 border-b">
+              <tr>
+                <th>{t("table.date")}</th>
+                <th>{t("table.plan")}</th>
+                <th>{t("table.credits")}</th>
+                <th>{t("table.amount")}</th>
+                <th>{t("table.status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {creditTxs.map((tx) => (
+                <tr key={tx._id} className="border-b">
+                  <td>
+                    {tx.createdAt
+                      ? new Date(tx.createdAt).toLocaleString()
+                      : "-"}
+                  </td>
+                  <td>{PLAN_NAMES[tx.planId] || tx.planId}</td>
+                  <td>{tx.credits}</td>
+                  <td>
+                    {formatStripeAmount(tx.amount, tx.currency)}
+                  </td>
+                  <td>{tx.status || "paid"}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {creditTxs.map((tx) => (
-                  <tr
-                    key={tx._id}
-                    className="border-b last:border-b-0 hover:bg-gray-50"
-                  >
-                    <td className="py-2 pr-4 text-xs text-gray-600">
-                      {tx.createdAt
-                        ? new Date(tx.createdAt).toLocaleString()
-                        : "-"}
-                    </td>
-                    <td className="py-2 pr-4">
-                      {PLAN_NAMES[tx.planId] || tx.planId}
-                    </td>
-                    <td className="py-2 pr-4">{tx.credits}</td>
-                    <td className="py-2 pr-4 font-semibold">
-                      {formatStripeAmount(tx.amount, tx.currency)}
-                    </td>
-                    <td className="py-2 pr-4 capitalize text-xs text-gray-700">
-                      {tx.status || "paid"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
@@ -257,9 +234,7 @@ const PatientBilling = () => {
 const SummaryCard = ({ label, value }) => (
   <div className="bg-white rounded-xl shadow p-4">
     <p className="text-xs text-gray-500 mb-1">{label}</p>
-    <p className="text-2xl font-semibold text-gray-800 break-words">
-      {value}
-    </p>
+    <p className="text-2xl font-semibold text-gray-800">{value}</p>
   </div>
 );
 
