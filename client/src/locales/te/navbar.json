@@ -1,0 +1,20 @@
+{
+  "home": "హోమ్",
+  "findDoctors": "డాక్టర్లను కనుగొనండి",
+  "features": "ఫీచర్లు",
+  "about": "మా గురించి",
+  "contact": "సంప్రదించండి",
+  "dashboard": "డాష్‌బోర్డ్",
+  "myDoctors": "నా డాక్టర్లు",
+  "allDoctors": "అన్ని డాక్టర్లు",
+  "appointments": "నా అపాయింట్‌మెంట్‌లు",
+  "chat": "చాట్",
+  "videoCall": "వీడియో కాల్",
+  "aiSummary": "AI సారాంశం",
+  "billing": "బిల్లింగ్",
+  "plans": "ప్లాన్లు",
+  "loginSignup": "లాగిన్ / సైన్ అప్",
+  "logout": "లాగ్ అవుట్",
+  "profile": "ప్రొఫైల్",
+  "settings": "సెట్టింగ్స్"
+}

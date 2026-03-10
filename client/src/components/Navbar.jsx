@@ -23,7 +23,7 @@ const Navbar = () => {
     { name: t("findDoctors"), path: "/doctors" },
     { name: t("features"), path: "/features" },
     { name: t("about"), path: "/about" },
-    { name: t("contact"), path: "/contact" }
+    { name: t("contact"), path: "/contact" },
   ];
 
   // Patient links
@@ -36,7 +36,7 @@ const Navbar = () => {
     { name: t("videoCall"), path: "/videoCall" },
     { name: t("aiSummary"), path: "/patient/summary" },
     { name: t("billing"), path: "/patient/billing" },
-    { name: t("plans"), path: "/patient/plans" }
+    { name: t("plans"), path: "/patient/plans" },
   ];
 
   // Doctor links
@@ -46,7 +46,7 @@ const Navbar = () => {
     { name: t("appointments"), path: "/dashboard/doctor/appointments" },
     { name: t("chat"), path: "/chat" },
     { name: t("videoCall"), path: "/videoCall" },
-    { name: t("earnings"), path: "dashboard/doctor/earnings" }
+    { name: t("earnings"), path: "dashboard/doctor/earnings" },
   ];
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -90,7 +90,9 @@ const Navbar = () => {
     >
       {/* Logo */}
       <Link to="/">
-        <h1 className={`text-xl sm:text-2xl font-bold ${isScrolled ? "text-black" : "text-white"}`}>
+        <h1
+          className={`text-xl sm:text-2xl font-bold ${isScrolled ? "text-black" : "text-white"}`}
+        >
           Connect2Cure
         </h1>
       </Link>
@@ -119,6 +121,9 @@ const Navbar = () => {
           <option value="en">EN</option>
           <option value="hi">हिंदी</option>
           <option value="mr">मराठी</option>
+          <option value="gu">ગુજરાતી</option>
+          <option value="ta">தமிழ்</option>
+          <option value="te">తెలుగు</option>
         </select>
 
         {!user && (
@@ -148,9 +153,16 @@ const Navbar = () => {
                 ref={profileMenuRef}
                 className="absolute right-0 mt-2 bg-white rounded shadow"
               >
-                <Link className="block px-4 py-2" to="/profile">{t("profile")}</Link>
-                <Link className="block px-4 py-2" to="/settings">{t("settings")}</Link>
-                <button onClick={logout} className="block px-4 py-2 text-red-600">
+                <Link className="block px-4 py-2" to="/profile">
+                  {t("profile")}
+                </Link>
+                <Link className="block px-4 py-2" to="/settings">
+                  {t("settings")}
+                </Link>
+                <button
+                  onClick={logout}
+                  className="block px-4 py-2 text-red-600"
+                >
                   {t("logout")}
                 </button>
               </div>
@@ -160,7 +172,10 @@ const Navbar = () => {
       </div>
 
       {/* Mobile menu button */}
-      <button className="lg:hidden text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+      <button
+        className="lg:hidden text-white"
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+      >
         ☰
       </button>
 
@@ -186,6 +201,9 @@ const Navbar = () => {
             <option value="en">English</option>
             <option value="hi">हिंदी</option>
             <option value="mr">मराठी</option>
+            <option value="gu">ગુજરાતી</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
           </select>
 
           {!user && (

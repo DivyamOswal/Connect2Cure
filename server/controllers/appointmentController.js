@@ -100,7 +100,7 @@ export const confirmPayment = async (req, res) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    // 👇 Do NOT auto-confirm here
+    // Do NOT auto-confirm here
     // appointment.status = "confirmed";  // remove / comment out
     appointment.stripePaymentIntentId = session.payment_intent;
     await appointment.save();
