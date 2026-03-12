@@ -1,3 +1,6 @@
+import sharp from "sharp";
+import { uploadToS3 } from "../utils/s3Upload.js";
+
 export const registerDoctor = async (req, res) => {
   try {
     const {
@@ -11,11 +14,13 @@ export const registerDoctor = async (req, res) => {
       experience,
       fee,
       phone,
-      timings, // JSON string from frontend
+      timings,
     } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Name, email and password are required" });
     }
 
     const existing = await User.findOne({ email });
@@ -23,7 +28,7 @@ export const registerDoctor = async (req, res) => {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    // 1) create user with role doctor
+    // 1️⃣ create user
     const user = await User.create({
       name,
       email,
@@ -31,21 +36,21 @@ export const registerDoctor = async (req, res) => {
       role: "doctor",
     });
 
-    // 2) handle image compression (if provided)
+    // 2️⃣ Upload image to S3 instead of local disk
     let imageUrl = "";
-    if (req.file) {
-      const filename = `doctor-${user._id}-${Date.now()}.webp`;
-      const outPath = path.join(__dirname, "..", "uploads", "doctors", filename);
 
-      await sharp(req.file.buffer)
+    if (req.file) {
+      const key = `doctors/${user._id}-${Date.now()}.webp`;
+
+      const buffer = await sharp(req.file.buffer)
         .resize(800, 800, { fit: "cover" })
         .webp({ quality: 70 })
-        .toFile(outPath);
+        .toBuffer();
 
-      imageUrl = `/uploads/doctors/${filename}`;
+      imageUrl = await uploadToS3(buffer, key, "image/webp");
     }
 
-    // 3) parse timings (from JSON string)
+    // 3️⃣ parse timings
     let timingsArray = [];
     if (timings) {
       try {
@@ -55,7 +60,7 @@ export const registerDoctor = async (req, res) => {
       }
     }
 
-    // 4) create DoctorProfile
+    // 4️⃣ create doctor profile
     await DoctorProfile.create({
       user: user._id,
       name,
@@ -71,11 +76,12 @@ export const registerDoctor = async (req, res) => {
       timings: timingsArray,
       phone: phone || "",
       image: imageUrl,
-      isPublished: true, // visible immediately
+      isPublished: true,
     });
 
-    // 5) issue tokens (same as login)
+    // 5️⃣ issue tokens
     const { accessToken, refreshToken, payload } = makeTokens(user);
+
     const redisKey = `refresh:${payload.userId}:${refreshToken}`;
     await redis.set(redisKey, "valid", { ex: REFRESH_TTL_SEC });
 

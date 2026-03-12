@@ -20,6 +20,8 @@ const DoctorOnboarding = () => {
   });
 
   const [imageFile, setImageFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -30,12 +32,12 @@ const DoctorOnboarding = () => {
       return;
     }
 
-    // load existing doctor profile if any
     api
       .get("/onboarding/doctor")
       .then((res) => {
         if (res.data) {
           const p = res.data;
+
           setForm({
             name: p.name || user.name || "",
             location: p.location || "",
@@ -47,8 +49,15 @@ const DoctorOnboarding = () => {
             phone: p.phone || "",
             timingsText: (p.timings || []).join("\n"),
           });
+
+          if (p.image) {
+            setPreview(p.image);
+          }
         } else {
-          setForm((prev) => ({ ...prev, name: user.name || "" }));
+          setForm((prev) => ({
+            ...prev,
+            name: user.name || "",
+          }));
         }
       })
       .catch((err) => {
@@ -62,13 +71,18 @@ const DoctorOnboarding = () => {
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) setImageFile(file);
+
+    if (file) {
+      setImageFile(file);
+      setPreview(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+
     setSaving(true);
+    setError("");
 
     try {
       const timingsArray = form.timingsText
@@ -77,6 +91,7 @@ const DoctorOnboarding = () => {
         .filter(Boolean);
 
       const fd = new FormData();
+
       fd.append("name", form.name);
       fd.append("location", form.location);
       fd.append("degree", form.degree);
@@ -86,23 +101,23 @@ const DoctorOnboarding = () => {
       fd.append("fee", form.fee);
       fd.append("phone", form.phone);
       fd.append("timings", JSON.stringify(timingsArray));
-      if (imageFile) fd.append("image", imageFile);
 
-      const res = await api.post("/onboarding/doctor", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      if (imageFile) {
+        fd.append("image", imageFile);
+      }
 
-      // mark onboarding completed in auth context
+      await api.post("/onboarding/doctor", fd);
+
       setUser((prev) =>
         prev ? { ...prev, onboardingCompleted: true } : prev
       );
 
-      // after successful onboarding, send them to doctors list or dashboard
       navigate("/doctors");
     } catch (err) {
       console.error(err);
       setError(
-        err?.response?.data?.message || "Could not save profile. Try again."
+        err?.response?.data?.message ||
+          "Could not save profile. Try again."
       );
     } finally {
       setSaving(false);
@@ -123,12 +138,17 @@ const DoctorOnboarding = () => {
         onSubmit={handleSubmit}
         className="w-full max-w-3xl bg-white rounded-xl shadow p-6 space-y-4"
       >
-        <h1 className="text-2xl font-bold mb-2">Complete Your Doctor Profile</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          Complete Your Doctor Profile
+        </h1>
+
         <p className="text-sm text-gray-600 mb-4">
           These details will appear on your doctor card and detail page.
         </p>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="text-sm text-red-600">{error}</p>
+        )}
 
         <div className="grid md:grid-cols-2 gap-4">
           <input
@@ -139,6 +159,7 @@ const DoctorOnboarding = () => {
             className="border rounded px-3 py-2"
             required
           />
+
           <input
             name="location"
             value={form.location}
@@ -146,27 +167,31 @@ const DoctorOnboarding = () => {
             placeholder="Location (e.g. Delhi, India)"
             className="border rounded px-3 py-2"
           />
+
           <input
             name="degree"
             value={form.degree}
             onChange={handleChange}
-            placeholder="Degree (e.g. BDS, MDS ...)"
+            placeholder="Degree (e.g. BDS, MDS)"
             className="border rounded px-3 py-2"
           />
+
           <input
             name="specialization"
             value={form.specialization}
             onChange={handleChange}
-            placeholder="Specialization (e.g. Dental Surgeon)"
+            placeholder="Specialization"
             className="border rounded px-3 py-2"
           />
+
           <input
             name="experience"
             value={form.experience}
             onChange={handleChange}
-            placeholder="Experience (e.g. 15+ years)"
+            placeholder="Experience (e.g. 10 years)"
             className="border rounded px-3 py-2"
           />
+
           <input
             name="fee"
             type="number"
@@ -175,6 +200,7 @@ const DoctorOnboarding = () => {
             placeholder="Consultation fee (₹)"
             className="border rounded px-3 py-2"
           />
+
           <input
             name="phone"
             value={form.phone}
@@ -197,6 +223,7 @@ const DoctorOnboarding = () => {
           <label className="block text-sm font-medium mb-1">
             Available Timings (one per line)
           </label>
+
           <textarea
             name="timingsText"
             value={form.timingsText}
@@ -211,7 +238,20 @@ const DoctorOnboarding = () => {
           <label className="block text-sm font-medium mb-1">
             Profile Image
           </label>
-          <input type="file" accept="image/*" onChange={handleImageChange} />
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+          />
+
+          {preview && (
+            <img
+              src={preview}
+              alt="Preview"
+              className="w-32 h-32 rounded-full object-cover mt-3"
+            />
+          )}
         </div>
 
         <button
