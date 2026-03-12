@@ -1,4 +1,5 @@
 // server/index.js
+
 import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
@@ -11,10 +12,13 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: true,
-    credentials: true,
+    origin: "*", // replace with frontend URL in production
     methods: ["GET", "POST"],
+    credentials: true,
   },
+  transports: ["websocket", "polling"],
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 // store online users
@@ -28,6 +32,8 @@ io.on("connection", (socket) => {
   // =========================
   socket.on("authenticate", (token) => {
     try {
+      if (!token) return socket.disconnect();
+
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
       socket.user = {
@@ -39,8 +45,12 @@ io.on("connection", (socket) => {
       console.log("🟢 Authenticated:", decoded.userId);
 
       socket.emit("authenticated");
+
+      // broadcast online users
+      io.emit("online-users", Array.from(onlineUsers.keys()));
+
     } catch (err) {
-      console.error("❌ Socket auth failed");
+      console.error("❌ Socket auth failed:", err.message);
       socket.disconnect();
     }
   });
@@ -48,9 +58,13 @@ io.on("connection", (socket) => {
   // =========================
   // SEND MESSAGE
   // =========================
-  socket.on("send-message", async ({ receiverId, text, attachment }) => {
+  socket.on("send-message", async (data) => {
     try {
       if (!socket.user) return;
+
+      const { receiverId, text, attachment } = data || {};
+
+      if (!receiverId) return;
 
       const message = await Message.create({
         sender: socket.user.id,
@@ -59,7 +73,7 @@ io.on("connection", (socket) => {
         attachment: attachment || null,
       });
 
-      // send back to sender
+      // confirm to sender
       socket.emit("message-sent", message);
 
       // send to receiver if online
@@ -68,6 +82,7 @@ io.on("connection", (socket) => {
       if (receiverSocket) {
         io.to(receiverSocket).emit("receive-message", message);
       }
+
     } catch (err) {
       console.error("💥 send-message error:", err);
     }
@@ -76,7 +91,9 @@ io.on("connection", (socket) => {
   // =========================
   // TYPING INDICATOR
   // =========================
-  socket.on("typing", ({ receiverId }) => {
+  socket.on("typing", ({ receiverId } = {}) => {
+    if (!socket.user || !receiverId) return;
+
     const receiverSocket = onlineUsers.get(receiverId);
 
     if (receiverSocket) {
@@ -86,7 +103,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("stop-typing", ({ receiverId }) => {
+  socket.on("stop-typing", ({ receiverId } = {}) => {
+    if (!socket.user || !receiverId) return;
+
     const receiverSocket = onlineUsers.get(receiverId);
 
     if (receiverSocket) {
@@ -99,7 +118,9 @@ io.on("connection", (socket) => {
   // =========================
   // VIDEO CALL SIGNALING
   // =========================
-  socket.on("call-user", ({ receiverId, signalData, roomId }) => {
+  socket.on("call-user", ({ receiverId, signalData, roomId } = {}) => {
+    if (!socket.user || !receiverId) return;
+
     const receiverSocket = onlineUsers.get(receiverId);
 
     if (receiverSocket) {
@@ -111,7 +132,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("answer-call", ({ callerId, signal }) => {
+  socket.on("answer-call", ({ callerId, signal } = {}) => {
+    if (!socket.user || !callerId) return;
+
     const callerSocket = onlineUsers.get(callerId);
 
     if (callerSocket) {
@@ -119,7 +142,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("reject-call", ({ callerId }) => {
+  socket.on("reject-call", ({ callerId } = {}) => {
+    if (!socket.user || !callerId) return;
+
     const callerSocket = onlineUsers.get(callerId);
 
     if (callerSocket) {
@@ -127,7 +152,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("end-call", ({ receiverId }) => {
+  socket.on("end-call", ({ receiverId } = {}) => {
+    if (!socket.user || !receiverId) return;
+
     const receiverSocket = onlineUsers.get(receiverId);
 
     if (receiverSocket) {
@@ -143,11 +170,15 @@ io.on("connection", (socket) => {
       onlineUsers.delete(socket.user.id);
     }
 
+    io.emit("online-users", Array.from(onlineUsers.keys()));
+
     console.log("🔌 Socket disconnected:", socket.id);
   });
 });
 
-// debug route
+// =========================
+// DEBUG ROUTE
+// =========================
 app.get("/cors-debug", (req, res) => {
   res.json({
     ok: true,
