@@ -1,23 +1,22 @@
 import multer from "multer";
 import sharp from "sharp";
-import path from "path";
-import { fileURLToPath } from "url";
 import { PatientProfile } from "../models/PatientProfile.js";
-import DoctorProfile  from "../models/DoctorProfile.js";
+import DoctorProfile from "../models/DoctorProfile.js";
 import { User } from "../models/User.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { uploadToS3 } from "../utils/s3Upload.js";   // 👈 ADD THIS
 
 const upload = multer({ storage: multer.memoryStorage() });
+
 export const uploadDoctorAvatar = upload.single("image");
+
 
 // PATIENT onboarding
 export const savePatientProfile = async (req, res) => {
   try {
-    const userId = req.user.userId; // from auth middleware
+    const userId = req.user.userId;
 
     let profile = await PatientProfile.findOne({ user: userId });
+
     if (!profile) {
       profile = await PatientProfile.create({ user: userId, ...req.body });
     } else {
@@ -28,11 +27,13 @@ export const savePatientProfile = async (req, res) => {
     await User.findByIdAndUpdate(userId, { onboardingCompleted: true });
 
     res.json({ message: "Patient profile saved", profile });
+
   } catch (err) {
     console.error("Patient onboarding error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // GET doctor onboarding profile
 export const getDoctorOnboarding = async (req, res) => {
@@ -45,7 +46,8 @@ export const getDoctorOnboarding = async (req, res) => {
 
     const profile = await DoctorProfile.findOne({ user: userId }).lean();
 
-    res.json(profile || null);  // return null if no profile yet
+    res.json(profile || null);
+
   } catch (err) {
     console.error("Get doctor onboarding error:", err);
     res.status(500).json({ message: "Server error" });
@@ -58,12 +60,10 @@ export const saveDoctorProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Ensure only doctors can access
     if (req.user.role !== "doctor") {
       return res.status(403).json({ message: "Only doctors can update this." });
     }
 
-    // Extract fields
     const {
       name,
       location,
@@ -76,8 +76,8 @@ export const saveDoctorProfile = async (req, res) => {
       timings,
     } = req.body;
 
-    // Convert timings JSON → array
     let timingsArray = [];
+
     try {
       timingsArray = timings ? JSON.parse(timings) : [];
     } catch {
@@ -94,23 +94,24 @@ export const saveDoctorProfile = async (req, res) => {
       fee: Number(fee) || 0,
       phone,
       timings: timingsArray,
-      isPublished: true, // Publish after onboarding
+      isPublished: true,
     };
 
-    // Handle IMAGE COMPRESSION
+    // 🚀 Upload image to S3 instead of local storage
     if (req.file) {
-      const filename = `doctor-${userId}-${Date.now()}.webp`;
-      const outputPath = path.join(__dirname, "..", "uploads", "doctors", filename);
 
-      await sharp(req.file.buffer)
+      const key = `doctors/${userId}-${Date.now()}.webp`;
+
+      const buffer = await sharp(req.file.buffer)
         .resize(800, 800, { fit: "cover" })
         .webp({ quality: 70 })
-        .toFile(outputPath);
+        .toBuffer();
 
-      updateData.image = `/uploads/doctors/${filename}`;
+      const imageUrl = await uploadToS3(buffer, key, "image/webp");
+
+      updateData.image = imageUrl;
     }
 
-    // Find or create profile
     let profile = await DoctorProfile.findOne({ user: userId });
 
     if (!profile) {
@@ -120,13 +121,13 @@ export const saveDoctorProfile = async (req, res) => {
       await profile.save();
     }
 
-    // Mark onboarding as completed
     await User.findByIdAndUpdate(userId, { onboardingCompleted: true });
 
     res.json({
       message: "Doctor profile saved successfully",
       profile,
     });
+
   } catch (err) {
     console.error("Doctor onboarding error:", err);
     res.status(500).json({ message: "Server error" });
