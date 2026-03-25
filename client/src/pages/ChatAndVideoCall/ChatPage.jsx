@@ -16,37 +16,42 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [incomingCall, setIncomingCall] = useState(null);
 
-  // AUTH
+  // ================= AUTH =================
   useEffect(() => {
     if (!token) return navigate("/login");
-
     socket.emit("authenticate", token);
-
-    socket.on("authenticated", () => {
-      console.log("✅ Socket connected");
-    });
-
-    return () => socket.off("authenticated");
   }, [token]);
 
-  // INCOMING CALL
+  // ================= INCOMING CALL =================
   useEffect(() => {
-    socket.on("incoming-call-notify", (data) => {
-      console.log("📞 Incoming:", data);
-      setIncomingCall(data);
-    });
+    const handleIncoming = ({ callerId }) => {
+      console.log("📞 Incoming:", callerId);
+      setIncomingCall({ callerId });
+    };
+
+    const handleAccepted = ({ receiverId }) => {
+      console.log("✅ Receiver accepted → go to call page");
+
+      navigate(`/video-call/${receiverId}`, {
+        state: { isCaller: true },
+      });
+    };
+
+    socket.on("incoming-call-notify", handleIncoming);
+    socket.on("call-accepted", handleAccepted);
 
     socket.on("call-rejected", () => alert("Call rejected"));
     socket.on("call-ended", () => alert("Call ended"));
 
     return () => {
-      socket.off("incoming-call-notify");
+      socket.off("incoming-call-notify", handleIncoming);
+      socket.off("call-accepted", handleAccepted);
       socket.off("call-rejected");
       socket.off("call-ended");
     };
   }, []);
 
-  // THREADS
+  // ================= LOAD THREADS =================
   useEffect(() => {
     if (!token) return;
 
@@ -58,10 +63,11 @@ const ChatPage = () => {
         const arr = Array.isArray(data) ? data : [];
         setThreads(arr);
         if (arr.length) setSelectedUser(arr[0].user);
-      });
+      })
+      .catch(() => setThreads([]));
   }, [token]);
 
-  // MESSAGES
+  // ================= LOAD MESSAGES =================
   const handleSelectUser = async (user) => {
     if (!user?._id) return;
 
@@ -76,7 +82,7 @@ const ChatPage = () => {
     setMessages(Array.isArray(data) ? data : []);
   };
 
-  // SOCKET CHAT
+  // ================= SOCKET MESSAGES =================
   useEffect(() => {
     const handler = (msg) => {
       if (!msg) return;
@@ -95,9 +101,9 @@ const ChatPage = () => {
     };
   }, []);
 
-  // SEND
+  // ================= SEND =================
   const handleSendMessage = ({ text }) => {
-    if (!selectedUser?._id || !text?.trim()) return;
+    if (!selectedUser || !text?.trim()) return;
 
     socket.emit("send-message", {
       receiverId: selectedUser._id,
@@ -105,26 +111,29 @@ const ChatPage = () => {
     });
   };
 
-  // START CALL
+  // ================= START CALL =================
   const handleStartCall = (id) => {
     console.log("📤 Call init:", id);
 
     socket.emit("call-user-init", {
-      receiverId: String(id),
+      receiverId: id,
     });
   };
 
-  // ACCEPT
+  // ================= ACCEPT =================
   const handleAccept = () => {
     socket.emit("accept-call", {
       callerId: incomingCall.callerId,
     });
 
-    navigate(`/video-call/${incomingCall.callerId}`);
+    navigate(`/video-call/${incomingCall.callerId}`, {
+      state: { isReceiver: true },
+    });
+
     setIncomingCall(null);
   };
 
-  // REJECT
+  // ================= REJECT =================
   const handleReject = () => {
     socket.emit("reject-call", {
       callerId: incomingCall.callerId,
@@ -148,22 +157,23 @@ const ChatPage = () => {
         onCall={handleStartCall}
       />
 
+      {/* Incoming Call Modal */}
       {incomingCall && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white p-6 rounded text-center">
-            <h2>Incoming Call</h2>
+            <h2 className="text-lg font-semibold">Incoming Call</h2>
 
             <div className="flex gap-4 mt-4">
               <button
                 onClick={handleAccept}
-                className="bg-green-500 px-4 py-2 text-white"
+                className="bg-green-600 text-white px-4 py-2 rounded"
               >
                 Accept
               </button>
 
               <button
                 onClick={handleReject}
-                className="bg-red-500 px-4 py-2 text-white"
+                className="bg-red-600 text-white px-4 py-2 rounded"
               >
                 Reject
               </button>
