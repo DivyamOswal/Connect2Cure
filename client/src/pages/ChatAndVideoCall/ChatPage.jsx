@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import socket from "../../socket";
 import ChatSidebar from "../../components/ChatAndVideo/ChatSidebar";
 import ChatWindow from "../../components/ChatAndVideo/ChatWindow";
@@ -10,163 +9,103 @@ const API_BASE_URL =
 
 const ChatPage = () => {
   const navigate = useNavigate();
-
   const token = localStorage.getItem("accessToken");
-
-  let currentUser = {};
-  try {
-    currentUser = JSON.parse(localStorage.getItem("user")) || {};
-  } catch {
-    currentUser = {};
-  }
 
   const [threads, setThreads] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
 
-  // =============================
-  // Select user
-  // =============================
-  const handleSelectUser = async (user) => {
-    if (!user || !user._id || !token) return;
-
-    setSelectedUser(user);
-
-    try {
-      const res = await fetch(
-        `${API_BASE_URL}/messages/conversation/${user._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed API");
-
-      const data = await res.json();
-
-      const msgs = Array.isArray(data) ? data : data?.messages || [];
-
-      setMessages(Array.isArray(msgs) ? msgs : []);
-    } catch (err) {
-      console.error("Failed to load conversation", err);
-      setMessages([]);
-    }
-  };
-
-  // =============================
-  // Authentication
-  // =============================
+  // ================= AUTH =================
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
+    if (!token) return navigate("/login");
     socket.emit("authenticate", token);
-  }, [token, navigate]);
+  }, [token]);
 
-  // =============================
-  // Load threads
-  // =============================
+  // ================= INCOMING CALL =================
+  useEffect(() => {
+    const handleIncomingCall = ({ callerId, offer }) => {
+      if (!callerId || !offer) return;
+
+      navigate(`/video-call/${callerId}`, {
+        state: { offer },
+      });
+    };
+
+    socket.on("incoming-call", handleIncomingCall);
+    return () => socket.off("incoming-call", handleIncomingCall);
+  }, []);
+
+  // ================= LOAD THREADS =================
   useEffect(() => {
     if (!token) return;
 
-    const loadThreads = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/messages/threads`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    fetch(`${API_BASE_URL}/messages/threads`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : [];
+        setThreads(arr);
 
-        if (!res.ok) throw new Error("Threads fetch failed");
-
-        const data = await res.json();
-
-        const threadsArray = Array.isArray(data)
-          ? data
-          : data?.threads || [];
-
-        setThreads(Array.isArray(threadsArray) ? threadsArray : []);
-
-        if (threadsArray.length > 0 && !selectedUser) {
-          handleSelectUser(threadsArray[0]?.user);
-        }
-      } catch (err) {
-        console.error("Failed to load threads", err);
-        setThreads([]);
-      }
-    };
-
-    loadThreads();
+        if (arr.length) setSelectedUser(arr[0].user);
+      })
+      .catch(() => setThreads([]));
   }, [token]);
 
-  // =============================
-  // Socket messages
-  // =============================
-  useEffect(() => {
-    if (!selectedUser || !selectedUser._id) return;
+  // ================= LOAD MESSAGES =================
+  const handleSelectUser = async (user) => {
+    if (!user?._id) return;
 
-    const handleIncoming = (msg) => {
+    setSelectedUser(user);
+
+    const res = await fetch(
+      `${API_BASE_URL}/messages/conversation/${user._id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const data = await res.json();
+    setMessages(Array.isArray(data) ? data : []);
+  };
+
+  // ================= SOCKET MESSAGES =================
+  useEffect(() => {
+    const handler = (msg) => {
       if (!msg) return;
 
-      const senderId = msg.sender?._id || msg.sender;
-      const receiverId = msg.receiver?._id || msg.receiver;
-
-      const selId = String(selectedUser._id);
-
-      const isRelevant =
-        (senderId && String(senderId) === selId) ||
-        (receiverId && String(receiverId) === selId);
-
-      if (!isRelevant) return;
-
       setMessages((prev) => {
-        if (!Array.isArray(prev)) return [msg];
-
-        // 🚨 prevent duplicate messages
-        if (
-          msg._id &&
-          prev.some((m) => String(m._id) === String(msg._id))
-        ) {
-          return prev;
-        }
-
+        if (prev.some((m) => m._id === msg._id)) return prev;
         return [...prev, msg];
       });
     };
 
-    socket.on("message-sent", handleIncoming);
-    socket.on("receive-message", handleIncoming);
+    socket.on("message-sent", handler);
+    socket.on("receive-message", handler);
 
     return () => {
-      socket.off("message-sent", handleIncoming);
-      socket.off("receive-message", handleIncoming);
+      socket.off("message-sent", handler);
+      socket.off("receive-message", handler);
     };
-  }, [selectedUser]);
+  }, []);
 
-  // =============================
-  // Send message
-  // =============================
+  // ================= SEND =================
   const handleSendMessage = ({ text }) => {
-    if (!selectedUser || !selectedUser._id || !text?.trim()) return;
+    if (!selectedUser || !text?.trim()) return;
 
     socket.emit("send-message", {
       receiverId: selectedUser._id,
       text: text.trim(),
-      attachment: null,
     });
   };
 
-  // =============================
-  // Start call
-  // =============================
-  const handleStartCall = (otherUserId) => {
-    if (!otherUserId) return;
-
-    navigate(`/video-call/${otherUserId}`);
+  // ================= START CALL =================
+  const handleStartCall = (id) => {
+    navigate(`/video-call/${id}`);
   };
 
   return (
-    <div className="h-screen flex bg-gray-100">
+    <div className="h-screen flex">
       <ChatSidebar
         threads={threads}
         selected={selectedUser}

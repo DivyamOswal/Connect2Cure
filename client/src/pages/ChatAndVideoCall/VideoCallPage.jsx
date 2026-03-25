@@ -1,99 +1,81 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useRef } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import socket from "../../socket";
 
 const VideoCallPage = () => {
   const { otherUserId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const token = localStorage.getItem("accessToken");
+
+  const incomingOffer = location.state?.offer;
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const pcRef = useRef(null);
 
-  const [isCaller, setIsCaller] = useState(true);
-
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
     init();
 
-    socket.on("incoming-call", handleIncomingCall);
-    socket.on("call-answer", handleCallAnswered);
-    socket.on("ice-candidate", handleRemoteIce);
-    socket.on("call-ended", handleCallEnded);
+    socket.on("call-answer", handleAnswer);
+    socket.on("ice-candidate", handleICE);
+    socket.on("call-ended", handleEnd);
 
     return () => {
-      socket.off("incoming-call", handleIncomingCall);
-      socket.off("call-answer", handleCallAnswered);
-      socket.off("ice-candidate", handleRemoteIce);
-      socket.off("call-ended", handleCallEnded);
+      socket.off("call-answer", handleAnswer);
+      socket.off("ice-candidate", handleICE);
+      socket.off("call-ended", handleEnd);
       cleanup();
     };
-  }, [otherUserId]);
+  }, []);
 
-  // =========================
-  // INIT WEBRTC
-  // =========================
   const init = async () => {
-    try {
-     pcRef.current = new RTCPeerConnection({
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:openrelay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-  ],
-});
+    pcRef.current = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        {
+          urls: "turn:openrelay.metered.ca:80",
+          username: "openrelayproject",
+          credential: "openrelayproject",
+        },
+      ],
+    });
 
-      pcRef.current.onicecandidate = (e) => {
-        if (e.candidate) {
-          socket.emit("ice-candidate", {
-            to: otherUserId,
-            candidate: e.candidate,
-          });
-        }
-      };
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
 
-      pcRef.current.ontrack = (e) => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = e.streams[0];
-        }
-      };
+    localVideoRef.current.srcObject = stream;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+    stream.getTracks().forEach((t) =>
+      pcRef.current.addTrack(t, stream)
+    );
 
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+    pcRef.current.ontrack = (e) => {
+      remoteVideoRef.current.srcObject = e.streams[0];
+    };
+
+    pcRef.current.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("ice-candidate", {
+          to: otherUserId,
+          candidate: e.candidate,
+        });
       }
+    };
 
-      stream.getTracks().forEach((track) =>
-        pcRef.current.addTrack(track, stream)
-      );
+    // 🔥 CALL FLOW
+    if (incomingOffer) {
+      await pcRef.current.setRemoteDescription(incomingOffer);
 
-      // caller starts offer
-      startCall();
-    } catch (err) {
-      console.error("Init error:", err);
-      navigate(-1);
-    }
-  };
+      const answer = await pcRef.current.createAnswer();
+      await pcRef.current.setLocalDescription(answer);
 
-  // =========================
-  // CALL START
-  // =========================
-  const startCall = async () => {
-    try {
-      setIsCaller(true);
-
+      socket.emit("call-answer", {
+        callerId: otherUserId,
+        answer,
+      });
+    } else {
       const offer = await pcRef.current.createOffer();
       await pcRef.current.setLocalDescription(offer);
 
@@ -101,108 +83,46 @@ const VideoCallPage = () => {
         receiverId: otherUserId,
         offer,
       });
-    } catch (err) {
-      console.error("startCall error", err);
     }
   };
 
-  // =========================
-  // RECEIVER SIDE
-  // =========================
-  const handleIncomingCall = async ({ callerId, offer }) => {
-    if (callerId !== otherUserId) return;
-
-    setIsCaller(false);
-
-    try {
-      await pcRef.current.setRemoteDescription(offer);
-
-      const answer = await pcRef.current.createAnswer();
-      await pcRef.current.setLocalDescription(answer);
-
-      socket.emit("call-answer", {
-        callerId,
-        answer,
-      });
-    } catch (err) {
-      console.error("Incoming call error:", err);
-    }
+  const handleAnswer = async ({ answer }) => {
+    await pcRef.current?.setRemoteDescription(answer);
   };
 
-  // =========================
-  // ANSWER RECEIVED
-  // =========================
-  const handleCallAnswered = async ({ answer }) => {
-    try {
-      await pcRef.current?.setRemoteDescription(answer);
-    } catch (err) {
-      console.error("Answer error:", err);
-    }
-  };
-
-  // =========================
-  // ICE HANDLING
-  // =========================
-  const handleRemoteIce = async ({ candidate }) => {
+  const handleICE = async ({ candidate }) => {
     try {
       await pcRef.current?.addIceCandidate(candidate);
-    } catch (err) {
-      console.error("ICE error:", err);
-    }
+    } catch {}
   };
 
-  // =========================
-  // CALL END
-  // =========================
-  const handleCallEnded = () => {
-    alert("Call ended");
+  const handleEnd = () => {
     cleanup();
     navigate(-1);
   };
 
   const cleanup = () => {
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
+    pcRef.current?.close();
 
     if (localVideoRef.current?.srcObject) {
       localVideoRef.current.srcObject
         .getTracks()
         .forEach((t) => t.stop());
-      localVideoRef.current.srcObject = null;
     }
-
-    if (remoteVideoRef.current?.srcObject) {
-      remoteVideoRef.current.srcObject = null;
-    }
-  };
-
-  const handleEndClick = () => {
-    socket.emit("end-call", { receiverId: otherUserId });
-    cleanup();
-    navigate(-1);
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center gap-4">
-      <div className="flex gap-4">
-        <video
-          ref={localVideoRef}
-          autoPlay
-          muted
-          className="w-64 h-48 bg-gray-800 rounded"
-        />
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          className="w-64 h-48 bg-gray-800 rounded"
-        />
-      </div>
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center">
+      <video ref={localVideoRef} autoPlay muted className="w-64" />
+      <video ref={remoteVideoRef} autoPlay className="w-64 mt-4" />
 
       <button
-        onClick={handleEndClick}
-        className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg"
+        onClick={() => {
+          socket.emit("end-call", { receiverId: otherUserId });
+          cleanup();
+          navigate(-1);
+        }}
+        className="mt-6 bg-red-600 text-white px-6 py-2"
       >
         End Call
       </button>
