@@ -1,18 +1,19 @@
-// server/controllers/messageController.js
 import Message from "../models/Message.js";
 import Appointment from "../models/Appointment.js";
 
 /**
  * GET /api/messages/threads
- * Build contact list based on appointments
- * + attach last message (from Message collection)
  */
 export const getThreads = async (req, res) => {
   try {
-    const myId = req.user.userId;
-    const myRole = req.user.role;
+    const myId = req.user?.userId;
+    const myRole = req.user?.role;
 
-    // 1) Find all active appointments for this user
+    if (!myId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // 1) Appointment filter
     let apptMatch = {
       status: { $in: ["pending", "confirmed"] },
     };
@@ -30,23 +31,31 @@ export const getThreads = async (req, res) => {
       .populate("patientUser", "name email role")
       .lean();
 
-    const contactMap = new Map(); // otherUserId -> { user, lastMessage }
+    const contactMap = new Map();
 
-    // 2) Build contact list from appointments
+    // 2) Build contacts safely
     for (const appt of appts) {
-      const otherUser =
-        String(appt.doctorUser._id) === String(myId)
-          ? appt.patientUser
-          : appt.doctorUser;
+      // 🚨 skip broken data
+      if (!appt?.doctorUser || !appt?.patientUser) continue;
+
+      const isDoctor =
+        String(appt.doctorUser?._id) === String(myId);
+
+      const otherUser = isDoctor
+        ? appt.patientUser
+        : appt.doctorUser;
+
+      if (!otherUser || !otherUser._id) continue;
 
       const key = String(otherUser._id);
+
       if (!contactMap.has(key)) {
         contactMap.set(key, {
           user: {
             _id: otherUser._id,
-            name: otherUser.name,
-            email: otherUser.email,
-            role: otherUser.role,
+            name: otherUser.name || "",
+            email: otherUser.email || "",
+            role: otherUser.role || "",
           },
           lastMessage: null,
         });
@@ -56,23 +65,29 @@ export const getThreads = async (req, res) => {
     const otherIds = [...contactMap.keys()];
     if (otherIds.length === 0) return res.json([]);
 
-    // 3) For those contacts, find latest Message between me and each of them
+    // 3) Fetch messages
     const msgs = await Message.find({
       $or: [
         { sender: myId, receiver: { $in: otherIds } },
         { sender: { $in: otherIds }, receiver: myId },
       ],
     })
-      .sort({ createdAt: -1 }) // newest first
+      .sort({ createdAt: -1 })
       .lean();
 
+    // 4) Attach last message
     for (const msg of msgs) {
+      if (!msg) continue;
+
       const otherId =
         String(msg.sender) === String(myId)
           ? String(msg.receiver)
           : String(msg.sender);
 
-      if (contactMap.has(otherId) && !contactMap.get(otherId).lastMessage) {
+      if (
+        contactMap.has(otherId) &&
+        !contactMap.get(otherId).lastMessage
+      ) {
         contactMap.get(otherId).lastMessage = msg;
       }
     }
@@ -86,12 +101,15 @@ export const getThreads = async (req, res) => {
 
 /**
  * GET /api/messages/conversation/:userId
- * Full conversation between me and other user
  */
 export const getConversation = async (req, res) => {
   try {
-    const myId = req.user.userId;
-    const otherId = req.params.userId;
+    const myId = req.user?.userId;
+    const otherId = req.params?.userId;
+
+    if (!myId || !otherId) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
 
     const messages = await Message.find({
       $or: [
@@ -99,10 +117,10 @@ export const getConversation = async (req, res) => {
         { sender: otherId, receiver: myId },
       ],
     })
-      .sort({ createdAt: 1 }) // oldest → newest
+      .sort({ createdAt: 1 })
       .lean();
 
-    return res.json(messages);
+    return res.json(messages || []);
   } catch (err) {
     console.error("getConversation error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -110,13 +128,16 @@ export const getConversation = async (req, res) => {
 };
 
 /**
- * POST /api/messages/send   (optional helper; sockets already save messages)
- * JSON: { receiver, text, attachment }  // attachment optional
+ * POST /api/messages/send
  */
 export const sendMessage = async (req, res) => {
   try {
-    const sender = req.user.userId;
+    const sender = req.user?.userId;
     const { receiver, text, attachment } = req.body;
+
+    if (!sender) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
     if (!receiver || (!text?.trim() && !attachment)) {
       return res.status(400).json({ message: "Missing fields" });
@@ -138,20 +159,18 @@ export const sendMessage = async (req, res) => {
 
 /**
  * POST /api/messages/upload
- * Multipart form-data: file
- * Uses multer middleware to populate req.file
  */
 export const uploadAttachment = async (req, res) => {
-  try{
+  try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
     const file = req.file;
 
-    // Adjust SERVER_URL depending on your setup
     const baseUrl =
-      process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+      process.env.SERVER_URL ||
+      `http://localhost:${process.env.PORT || 5000}`;
 
     const url = `${baseUrl}/uploads/${file.filename}`;
 
