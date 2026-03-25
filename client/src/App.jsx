@@ -81,7 +81,7 @@ const App = () => {
           <Route path="/doctor/onboarding" element={<DoctorOnboarding />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-cancelled" element={<PaymentCancelled />} />
-          <Route path="/videoCall" element={<VideoCallPage />} />
+          <Route path="/video-call/:otherUserId" element={<VideoCallPage />} />
           <Route path="/chat" element={<ChatPage />} />
 
           {/* 🔹 Plans route */}
