@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../../api/axios";
+import { getDoctorImageUrl } from "../../utils/imageUrl";
 
 const PatientDoctor = () => {
   const { t } = useTranslation("patientdoctor");
@@ -39,23 +40,18 @@ const PatientDoctor = () => {
             });
           } else {
             existing.totalVisits += 1;
-            existing.lastAppointment = Math.max(
-              existing.lastAppointment,
-              dt
-            );
+            existing.lastAppointment = Math.max(existing.lastAppointment, dt);
           }
         });
 
         setDoctors(
           Array.from(map.values()).sort(
-            (a, b) => b.lastAppointment - a.lastAppointment
-          )
+            (a, b) => b.lastAppointment - a.lastAppointment,
+          ),
         );
       } catch (err) {
         setError(
-          err?.response?.data?.message ||
-            err.message ||
-            t("errors.generic")
+          err?.response?.data?.message || err.message || t("errors.generic"),
         );
       } finally {
         setLoading(false);
@@ -66,11 +62,7 @@ const PatientDoctor = () => {
   }, [t]);
 
   if (loading) {
-    return (
-      <p className="text-gray-500 px-4 py-4">
-        {t("loading")}
-      </p>
-    );
+    return <p className="text-gray-500 px-4 py-4">{t("loading")}</p>;
   }
 
   if (error) {
@@ -83,23 +75,15 @@ const PatientDoctor = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-semibold mb-2">
-        {t("title")}
-      </h1>
-      <p className="text-sm text-gray-500 mb-6">
-        {t("subtitle")}
-      </p>
+      <h1 className="text-2xl font-semibold mb-2">{t("title")}</h1>
+      <p className="text-sm text-gray-500 mb-6">{t("subtitle")}</p>
 
       {doctors.length === 0 ? (
-        <p className="text-sm text-gray-500">
-          {t("empty")}
-        </p>
+        <p className="text-sm text-gray-500">{t("empty")}</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {doctors.map(({ doctor, totalVisits, lastAppointment }) => {
-            const BACKEND =
-              import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:5000";
-            const imgSrc = doctor.image ? `${BACKEND}${doctor.image}` : null;
+            const imgSrc = getDoctorImageUrl(doctor.image);
 
             return (
               <div
@@ -132,9 +116,7 @@ const PatientDoctor = () => {
                   <div className="mt-3 text-xs text-gray-600">
                     <p>
                       {t("totalVisits")}{" "}
-                      <span className="font-semibold">
-                        {totalVisits}
-                      </span>
+                      <span className="font-semibold">{totalVisits}</span>
                     </p>
                     <p>
                       {t("lastVisit")}{" "}
