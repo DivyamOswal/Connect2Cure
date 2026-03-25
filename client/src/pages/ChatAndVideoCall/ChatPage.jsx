@@ -16,37 +16,137 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [incomingCall, setIncomingCall] = useState(null);
 
-  // AUTH
+  // ================= AUTH =================
   useEffect(() => {
-    if (!token) return navigate("/login");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     socket.emit("authenticate", token);
+  }, [token, navigate]);
+
+  // ================= LOAD THREADS =================
+  useEffect(() => {
+    if (!token) return;
+
+    const loadThreads = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/messages/threads`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : [];
+
+        setThreads(arr);
+
+        // auto select first user
+        if (arr.length > 0) {
+          handleSelectUser(arr[0].user);
+        }
+      } catch (err) {
+        console.error("Threads error:", err);
+        setThreads([]);
+      }
+    };
+
+    loadThreads();
   }, [token]);
 
-  // CALL EVENTS
+  // ================= SELECT USER =================
+  const handleSelectUser = async (user) => {
+    if (!user?._id) return;
+
+    setSelectedUser(user);
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/messages/conversation/${user._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      setMessages(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Conversation error:", err);
+      setMessages([]);
+    }
+  };
+
+  // ================= SOCKET MESSAGES =================
   useEffect(() => {
-    socket.on("incoming-call-notify", ({ callerId }) => {
-      setIncomingCall({ callerId });
-    });
+    const handler = (msg) => {
+      if (!msg) return;
 
-    socket.on("call-accepted", ({ receiverId }) => {
-      navigate(`/video-call/${receiverId}`);
-    });
+      setMessages((prev) => {
+        if (prev.some((m) => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
+    };
 
-    socket.on("call-ended", () => alert("Call ended"));
+    socket.on("message-sent", handler);
+    socket.on("receive-message", handler);
 
     return () => {
-      socket.off("incoming-call-notify");
-      socket.off("call-accepted");
-      socket.off("call-ended");
+      socket.off("message-sent", handler);
+      socket.off("receive-message", handler);
     };
   }, []);
 
-  // START CALL
-  const handleStartCall = (id) => {
-    socket.emit("call-user-init", { receiverId: id });
+  // ================= SEND MESSAGE =================
+  const handleSendMessage = ({ text }) => {
+    if (!selectedUser || !text?.trim()) return;
+
+    socket.emit("send-message", {
+      receiverId: selectedUser._id,
+      text: text.trim(),
+    });
   };
 
-  // ACCEPT
+  // ================= CALL EVENTS =================
+  useEffect(() => {
+    // incoming popup
+    const handleIncoming = ({ callerId }) => {
+      setIncomingCall({ callerId });
+    };
+
+    // caller navigates
+    const handleAccepted = ({ receiverId }) => {
+      navigate(`/video-call/${receiverId}`);
+    };
+
+    const handleEnded = () => {
+      alert("Call ended");
+    };
+
+    socket.on("incoming-call-notify", handleIncoming);
+    socket.on("call-accepted", handleAccepted);
+    socket.on("call-ended", handleEnded);
+
+    return () => {
+      socket.off("incoming-call-notify", handleIncoming);
+      socket.off("call-accepted", handleAccepted);
+      socket.off("call-ended", handleEnded);
+    };
+  }, [navigate]);
+
+  // ================= START CALL =================
+  const handleStartCall = (id) => {
+    if (!id) return;
+
+    socket.emit("call-user-init", {
+      receiverId: id,
+    });
+  };
+
+  // ================= ACCEPT CALL =================
   const handleAccept = () => {
     socket.emit("accept-call", {
       callerId: incomingCall.callerId,
@@ -56,35 +156,53 @@ const ChatPage = () => {
     setIncomingCall(null);
   };
 
-  // REJECT
+  // ================= REJECT CALL =================
   const handleReject = () => {
     socket.emit("reject-call", {
       callerId: incomingCall.callerId,
     });
+
     setIncomingCall(null);
   };
 
   return (
     <div className="h-screen flex">
+      {/* Sidebar */}
       <ChatSidebar
         threads={threads}
         selected={selectedUser}
-        onSelect={setSelectedUser}
+        onSelect={handleSelectUser} // ✅ FIXED
       />
 
+      {/* Chat Window */}
       <ChatWindow
         user={selectedUser}
         messages={messages}
+        onSend={handleSendMessage}
         onCall={handleStartCall}
       />
 
+      {/* Incoming Call Modal */}
       {incomingCall && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded">
-            <h2>Incoming Call</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg text-center shadow-lg">
+            <h2 className="text-lg font-semibold">Incoming Call</h2>
 
-            <button onClick={handleAccept}>Accept</button>
-            <button onClick={handleReject}>Reject</button>
+            <div className="flex gap-4 mt-4 justify-center">
+              <button
+                onClick={handleAccept}
+                className="bg-green-600 text-white px-4 py-2 rounded"
+              >
+                Accept
+              </button>
+
+              <button
+                onClick={handleReject}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+              >
+                Reject
+              </button>
+            </div>
           </div>
         </div>
       )}
