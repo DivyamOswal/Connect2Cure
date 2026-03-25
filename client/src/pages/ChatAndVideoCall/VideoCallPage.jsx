@@ -24,17 +24,18 @@ const VideoCallPage = () => {
 
     pcRef.current = pc;
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
+      .then((stream) => {
         localRef.current.srcObject = stream;
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
       });
 
-    pc.ontrack = e => {
+    pc.ontrack = (e) => {
       remoteRef.current.srcObject = e.streams[0];
     };
 
-    pc.onicecandidate = e => {
+    pc.onicecandidate = (e) => {
       if (e.candidate) {
         socket.emit("ice-candidate", {
           to: otherUserId,
@@ -43,7 +44,7 @@ const VideoCallPage = () => {
       }
     };
 
-    // CALLER waits
+    // CALLER
     socket.on("call-accepted", async () => {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -83,13 +84,19 @@ const VideoCallPage = () => {
       navigate("/chat");
     });
 
+    socket.on("call-rejected", () => {
+      alert("Call rejected");
+      navigate("/chat");
+    });
+
     return () => cleanup();
   }, []);
 
   const cleanup = () => {
     pcRef.current?.close();
+
     if (localRef.current?.srcObject) {
-      localRef.current.srcObject.getTracks().forEach(t => t.stop());
+      localRef.current.srcObject.getTracks().forEach((t) => t.stop());
     }
   };
 

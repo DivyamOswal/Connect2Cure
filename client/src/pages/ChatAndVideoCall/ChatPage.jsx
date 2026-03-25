@@ -19,22 +19,25 @@ const ChatPage = () => {
   // AUTH
   useEffect(() => {
     if (!token) return navigate("/login");
+
     socket.emit("authenticate", token);
+
+    socket.on("authenticated", () => {
+      console.log("✅ Socket connected");
+    });
+
+    return () => socket.off("authenticated");
   }, [token]);
 
-  // INCOMING CALL NOTIFY
+  // INCOMING CALL
   useEffect(() => {
-    socket.on("incoming-call-notify", ({ callerId }) => {
-      setIncomingCall({ callerId });
+    socket.on("incoming-call-notify", (data) => {
+      console.log("📞 Incoming:", data);
+      setIncomingCall(data);
     });
 
-    socket.on("call-rejected", () => {
-      alert("Call rejected");
-    });
-
-    socket.on("call-ended", () => {
-      alert("Call ended");
-    });
+    socket.on("call-rejected", () => alert("Call rejected"));
+    socket.on("call-ended", () => alert("Call ended"));
 
     return () => {
       socket.off("incoming-call-notify");
@@ -43,7 +46,7 @@ const ChatPage = () => {
     };
   }, []);
 
-  // LOAD THREADS
+  // THREADS
   useEffect(() => {
     if (!token) return;
 
@@ -55,11 +58,10 @@ const ChatPage = () => {
         const arr = Array.isArray(data) ? data : [];
         setThreads(arr);
         if (arr.length) setSelectedUser(arr[0].user);
-      })
-      .catch(() => setThreads([]));
+      });
   }, [token]);
 
-  // LOAD MESSAGES
+  // MESSAGES
   const handleSelectUser = async (user) => {
     if (!user?._id) return;
 
@@ -74,10 +76,11 @@ const ChatPage = () => {
     setMessages(Array.isArray(data) ? data : []);
   };
 
-  // SOCKET MESSAGES
+  // SOCKET CHAT
   useEffect(() => {
     const handler = (msg) => {
       if (!msg) return;
+
       setMessages((prev) =>
         prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]
       );
@@ -94,7 +97,7 @@ const ChatPage = () => {
 
   // SEND
   const handleSendMessage = ({ text }) => {
-    if (!selectedUser || !text?.trim()) return;
+    if (!selectedUser?._id || !text?.trim()) return;
 
     socket.emit("send-message", {
       receiverId: selectedUser._id,
@@ -102,12 +105,16 @@ const ChatPage = () => {
     });
   };
 
-  // START CALL (ONLY NOTIFY)
+  // START CALL
   const handleStartCall = (id) => {
-    socket.emit("call-user-init", { receiverId: id });
+    console.log("📤 Call init:", id);
+
+    socket.emit("call-user-init", {
+      receiverId: String(id),
+    });
   };
 
-  // ACCEPT CALL
+  // ACCEPT
   const handleAccept = () => {
     socket.emit("accept-call", {
       callerId: incomingCall.callerId,
@@ -122,6 +129,7 @@ const ChatPage = () => {
     socket.emit("reject-call", {
       callerId: incomingCall.callerId,
     });
+
     setIncomingCall(null);
   };
 
@@ -140,16 +148,23 @@ const ChatPage = () => {
         onCall={handleStartCall}
       />
 
-      {/* Incoming Call Modal */}
       {incomingCall && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white p-6 rounded text-center">
             <h2>Incoming Call</h2>
+
             <div className="flex gap-4 mt-4">
-              <button onClick={handleAccept} className="bg-green-500 px-4 py-2 text-white">
+              <button
+                onClick={handleAccept}
+                className="bg-green-500 px-4 py-2 text-white"
+              >
                 Accept
               </button>
-              <button onClick={handleReject} className="bg-red-500 px-4 py-2 text-white">
+
+              <button
+                onClick={handleReject}
+                className="bg-red-500 px-4 py-2 text-white"
+              >
                 Reject
               </button>
             </div>
