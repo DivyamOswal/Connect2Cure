@@ -22,7 +22,6 @@ const ChatPage = () => {
       navigate("/login");
       return;
     }
-
     socket.emit("authenticate", token);
   }, [token, navigate]);
 
@@ -33,17 +32,13 @@ const ChatPage = () => {
     const loadThreads = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/messages/threads`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = await res.json();
         const arr = Array.isArray(data) ? data : [];
-
         setThreads(arr);
 
-        // auto select first user
         if (arr.length > 0) {
           handleSelectUser(arr[0].user);
         }
@@ -59,17 +54,12 @@ const ChatPage = () => {
   // ================= SELECT USER =================
   const handleSelectUser = async (user) => {
     if (!user?._id) return;
-
     setSelectedUser(user);
 
     try {
       const res = await fetch(
         `${API_BASE_URL}/messages/conversation/${user._id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const data = await res.json();
@@ -84,7 +74,6 @@ const ChatPage = () => {
   useEffect(() => {
     const handler = (msg) => {
       if (!msg) return;
-
       setMessages((prev) => {
         if (prev.some((m) => m._id === msg._id)) return prev;
         return [...prev, msg];
@@ -103,7 +92,6 @@ const ChatPage = () => {
   // ================= SEND MESSAGE =================
   const handleSendMessage = ({ text }) => {
     if (!selectedUser || !text?.trim()) return;
-
     socket.emit("send-message", {
       receiverId: selectedUser._id,
       text: text.trim(),
@@ -112,14 +100,15 @@ const ChatPage = () => {
 
   // ================= CALL EVENTS =================
   useEffect(() => {
-    // incoming popup
     const handleIncoming = ({ callerId }) => {
       setIncomingCall({ callerId });
     };
 
-    // caller navigates
+    // Caller gets this after receiver accepts → navigate as CALLER
     const handleAccepted = ({ receiverId }) => {
-      navigate(`/video-call/${receiverId}`);
+      navigate(`/video-call/${receiverId}`, {
+        state: { isCaller: true }, // ← tells VideoCallPage to create offer
+      });
     };
 
     const handleEnded = () => {
@@ -140,28 +129,21 @@ const ChatPage = () => {
   // ================= START CALL =================
   const handleStartCall = (id) => {
     if (!id) return;
-
-    socket.emit("call-user-init", {
-      receiverId: id,
-    });
+    socket.emit("call-user-init", { receiverId: id });
   };
 
   // ================= ACCEPT CALL =================
   const handleAccept = () => {
-    socket.emit("accept-call", {
-      callerId: incomingCall.callerId,
-    });
+    socket.emit("accept-call", { callerId: incomingCall.callerId });
 
+    // Receiver navigates WITHOUT isCaller → defaults to false in VideoCallPage
     navigate(`/video-call/${incomingCall.callerId}`);
     setIncomingCall(null);
   };
 
   // ================= REJECT CALL =================
   const handleReject = () => {
-    socket.emit("reject-call", {
-      callerId: incomingCall.callerId,
-    });
-
+    socket.emit("reject-call", { callerId: incomingCall.callerId });
     setIncomingCall(null);
   };
 
@@ -171,7 +153,7 @@ const ChatPage = () => {
       <ChatSidebar
         threads={threads}
         selected={selectedUser}
-        onSelect={handleSelectUser} // ✅ FIXED
+        onSelect={handleSelectUser}
       />
 
       {/* Chat Window */}
