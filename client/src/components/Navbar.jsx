@@ -17,7 +17,6 @@ const Navbar = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  // Guest links
   const guestLinks = [
     { name: t("home"), path: "/" },
     { name: t("findDoctors"), path: "/doctors" },
@@ -26,7 +25,6 @@ const Navbar = () => {
     { name: t("contact"), path: "/contact" },
   ];
 
-  // Patient links
   const patientLinks = [
     { name: t("dashboard"), path: "/patient/dashboard" },
     { name: t("myDoctors"), path: "/patient/doctors" },
@@ -39,7 +37,6 @@ const Navbar = () => {
     { name: t("plans"), path: "/patient/plans" },
   ];
 
-  // Doctor links
   const doctorLinks = [
     { name: t("dashboard"), path: "dashboard/doctor" },
     { name: t("myPatients"), path: "/dashboard/doctor/patients" },
@@ -112,7 +109,6 @@ const Navbar = () => {
 
       {/* Right side */}
       <div className="hidden lg:flex items-center gap-4">
-        {/* 🌐 Language selector */}
         <select
           value={i18n.language}
           onChange={(e) => i18n.changeLanguage(e.target.value)}
@@ -182,6 +178,15 @@ const Navbar = () => {
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="fixed inset-0 bg-white flex flex-col items-center justify-center gap-6">
+
+          {/* ✅ ADDED CLOSE ICON */}
+          <button
+            className="absolute top-5 right-5 text-3xl font-bold text-black"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            ✕
+          </button>
+
           {navLinks.map((link, i) => (
             <Link
               key={i}
