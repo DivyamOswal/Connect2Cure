@@ -4,6 +4,7 @@ import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 import { callGeminiJson } from "../config/geminiRest.js";
 import Report from "../models/Report.js";
+import { User } from "../models/User.js";
 
 /** FIX for pdf-parse in ES modules (Node 18–22) */
 const loadPdfParse = async () => {
@@ -31,7 +32,7 @@ const normalizeCharts = (charts, medicalTermsLength = 0) => {
 
   // ---- termsFrequency: numeric array ----
   let termsFrequency = toArray(safe.termsFrequency).map((n) =>
-    Number.isFinite(Number(n)) ? Number(n) : 0
+    Number.isFinite(Number(n)) ? Number(n) : 0,
   );
 
   if (medicalTermsLength > 0) {
@@ -45,19 +46,14 @@ const normalizeCharts = (charts, medicalTermsLength = 0) => {
   const categories = toArray(safe.categories).map((c) => {
     if (typeof c === "string") return c;
     if (c && typeof c === "object") {
-      return (
-        c.label ||
-        c.name ||
-        c.category ||
-        JSON.stringify(c)
-      );
+      return c.label || c.name || c.category || JSON.stringify(c);
     }
     return String(c);
   });
 
   // ---- severityDots: numeric array ----
   let severityDots = toArray(safe.severityDots).map((n) =>
-    Number.isFinite(Number(n)) ? Number(n) : 0
+    Number.isFinite(Number(n)) ? Number(n) : 0,
   );
 
   if (medicalTermsLength > 0) {
@@ -73,83 +69,54 @@ const normalizeCharts = (charts, medicalTermsLength = 0) => {
 // ---------------- TEXT MODE ----------------
 export const analyzeReport = async (req, res) => {
   try {
-    // Support both req.userDoc (DB user) and req.user (JWT payload)
     const authUser = req.userDoc || req.user;
 
     if (!authUser) {
-      return res
-        .status(401)
-        .json({ message: "Not authenticated" });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
     const userId = authUser._id || authUser.userId;
+
     if (!userId) {
-      return res
-        .status(401)
-        .json({ message: "Invalid user context" });
+      return res.status(401).json({ message: "Invalid user context" });
     }
 
     const { text } = req.body;
 
     if (!text || !text.trim()) {
-      return res
-        .status(400)
-        .json({ message: "Report text is required" });
+      return res.status(400).json({ message: "Report text is required" });
     }
 
-    const prompt = `
-You are a medical assistant.
+    // ✅ STEP 1: DEDUCT CREDITS (ATOMIC)
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId, credits: { $gte: 1 } },
+      { $inc: { credits: -1 } },
+      { new: true },
+    );
 
-Read the following lab report text and respond with ONLY a single JSON object.
-DO NOT wrap it in markdown or backticks.
+    if (!updatedUser) {
+      return res.status(402).json({ message: "Not enough credits" });
+    }
 
-The JSON MUST have exactly this shape:
-
-{
-  "summary": "string",
-  "medicalTerms": ["string", ...],
-  "charts": {
-    "termsFrequency": [number, ...],
-    "categories": ["string", ...],
-    "severityDots": [number, ...]
-  }
-}
-
-Rules:
-- "summary": 2–4 sentences in plain language describing the important abnormalities and overall impression.
-- "medicalTerms": up to 10 key lab terms or diagnoses from the report, as short strings (e.g. "Hemoglobin", "Hematocrit", "WBC count").
-- "termsFrequency": an array of the SAME LENGTH as "medicalTerms".
-  Each element is an integer from 1 to 5 representing how prominent/important that term is in the report (5 = very important).
-- "categories": 2–5 short strings grouping the terms logically (e.g. "Red cell indices", "White cell count", "Platelets").
-- "severityDots": an array of the SAME LENGTH as "medicalTerms".
-  Each element is an integer from 1 to 10 representing clinical severity (10 = very severe).
-- Always use numbers for "termsFrequency" and "severityDots", never objects.
-- Always use plain strings for "categories", never objects.
-- Do NOT include any fields other than "summary", "medicalTerms", and "charts".
-
-Report text:
-"""${text}"""
-`.trim();
-
+    // ✅ STEP 2: RUN AI
     let json;
     try {
-      json = await callGeminiJson(prompt);
+      json = await callGeminiJson(`YOUR_PROMPT_HERE`);
     } catch (err) {
-      console.error("❌ Gemini error (text mode):", err);
-      return res
-        .status(502)
-        .json({ message: "Analyzer returned invalid response" });
+      // 🔁 refund if AI fails
+      await User.findByIdAndUpdate(userId, { $inc: { credits: 1 } });
+
+      console.error("❌ Gemini error:", err);
+      return res.status(502).json({ message: "Analyzer failed" });
     }
 
     const medicalTerms = Array.isArray(json.medicalTerms)
       ? json.medicalTerms
       : [];
 
-    const charts = normalizeCharts(
-      json.charts,
-      medicalTerms.length
-    );
+    const charts = normalizeCharts(json.charts, medicalTerms.length);
 
+    // ✅ STEP 3: SAVE REPORT
     const report = await Report.create({
       user: userId,
       rawText: text,
@@ -158,24 +125,10 @@ Report text:
       charts,
     });
 
-    // Handle credits only if we have a real Mongoose user doc
-    if (
-      authUser &&
-      typeof authUser.credits === "number" &&
-      typeof authUser.save === "function"
-    ) {
-      authUser.credits -= 1;
-      await authUser.save();
-    }
-
-    const remainingCredits =
-      typeof authUser?.credits === "number"
-        ? authUser.credits
-        : null;
-
+    // ✅ STEP 4: RETURN UPDATED CREDITS
     return res.json({
       report,
-      remainingCredits,
+      remainingCredits: updatedUser.credits,
     });
   } catch (err) {
     console.error("❌ analyzeReport error:", err);
@@ -189,16 +142,13 @@ export const analyzeReportFile = async (req, res) => {
     const authUser = req.userDoc || req.user;
 
     if (!authUser) {
-      return res
-        .status(401)
-        .json({ message: "Not authenticated" });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
     const userId = authUser._id || authUser.userId;
+
     if (!userId) {
-      return res
-        .status(401)
-        .json({ message: "Invalid user context" });
+      return res.status(401).json({ message: "Invalid user context" });
     }
 
     if (!req.file) {
@@ -208,44 +158,43 @@ export const analyzeReportFile = async (req, res) => {
     const { buffer, mimetype } = req.file;
     let extractedText = "";
 
-    console.log("📄 Uploaded:", mimetype);
-
-    // ---- PDF ----
+    // ---- Extract text ----
     if (mimetype === "application/pdf") {
       const pdfParse = await loadPdfParse();
       const data = await pdfParse(buffer);
       extractedText = data.text;
-    }
-
-    // ---- DOCX ----
-    else if (
+    } else if (
       mimetype ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
       const result = await mammoth.extractRawText({ buffer });
       extractedText = result.value;
-    }
-
-    // ---- TXT ----
-    else if (mimetype === "text/plain") {
+    } else if (mimetype === "text/plain") {
       extractedText = buffer.toString("utf8");
-    }
-
-    // ---- IMAGE OCR ----
-    else if (mimetype.startsWith("image/")) {
-      const result = await Tesseract.recognize(buffer, "eng", {
-        logger: (m) => console.log("OCR:", m),
-      });
+    } else if (mimetype.startsWith("image/")) {
+      const result = await Tesseract.recognize(buffer, "eng");
       extractedText = result.data.text;
     }
 
     if (!extractedText.trim()) {
-      return res
-        .status(400)
-        .json({ message: "Could not extract text" });
+      return res.status(400).json({ message: "Could not extract text" });
     }
 
-    const prompt = `
+    // ✅ STEP 1: DEDUCT CREDITS
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId, credits: { $gte: 1 } },
+      { $inc: { credits: -1 } },
+      { new: true },
+    );
+
+    if (!updatedUser) {
+      return res.status(402).json({ message: "Not enough credits" });
+    }
+
+    // ✅ STEP 2: RUN AI
+    let json;
+    try {
+      json = await callGeminiJson(`
 You are a medical assistant.
 
 Read the following lab report text and respond with ONLY a single JSON object.
@@ -277,27 +226,22 @@ Rules:
 
 Report text:
 """${extractedText}"""
-`.trim();
-
-    let json;
-    try {
-      json = await callGeminiJson(prompt);
+`);
     } catch (err) {
-      console.error("❌ Gemini error (file mode):", err);
-      return res
-        .status(502)
-        .json({ message: "Analyzer returned invalid response" });
+      // 🔁 refund
+      await User.findByIdAndUpdate(userId, { $inc: { credits: 1 } });
+
+      console.error("❌ Gemini error:", err);
+      return res.status(502).json({ message: "Analyzer failed" });
     }
 
     const medicalTerms = Array.isArray(json.medicalTerms)
       ? json.medicalTerms
       : [];
 
-    const charts = normalizeCharts(
-      json.charts,
-      medicalTerms.length
-    );
+    const charts = normalizeCharts(json.charts, medicalTerms.length);
 
+    // ✅ STEP 3: SAVE REPORT
     const report = await Report.create({
       user: userId,
       rawText: extractedText,
@@ -306,29 +250,14 @@ Report text:
       charts,
     });
 
-    if (
-      authUser &&
-      typeof authUser.credits === "number" &&
-      typeof authUser.save === "function"
-    ) {
-      authUser.credits -= 1;
-      await authUser.save();
-    }
-
-    const remainingCredits =
-      typeof authUser?.credits === "number"
-        ? authUser.credits
-        : null;
-
+    // ✅ STEP 4: RETURN
     return res.json({
       report,
-      remainingCredits,
+      remainingCredits: updatedUser.credits,
     });
   } catch (err) {
     console.error("❌ analyzeReportFile error:", err);
-    return res
-      .status(500)
-      .json({ message: "Error analyzing file" });
+    return res.status(500).json({ message: "Error analyzing file" });
   }
 };
 
@@ -363,8 +292,6 @@ export const createShareLink = async (req, res) => {
   }
 };
 
-
-
 export const downloadReportPdf = async (req, res) => {
   try {
     const { id } = req.params;
@@ -383,10 +310,7 @@ export const downloadReportPdf = async (req, res) => {
 
     const filename = `report-${report._id}.pdf`;
 
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${filename}"`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.setHeader("Content-Type", "application/pdf");
 
     // Pipe the PDF into the response
@@ -443,13 +367,10 @@ export const downloadReportPdf = async (req, res) => {
   } catch (err) {
     console.error("❌ downloadReportPdf error:", err);
     if (!res.headersSent) {
-      return res
-        .status(500)
-        .json({ message: "Error downloading report" });
+      return res.status(500).json({ message: "Error downloading report" });
     }
   }
 };
-
 
 export const getSharedReport = async (req, res) => {
   try {
@@ -477,4 +398,3 @@ export const getSharedReport = async (req, res) => {
     return res.status(500).json({ message: "Error fetching shared report" });
   }
 };
-

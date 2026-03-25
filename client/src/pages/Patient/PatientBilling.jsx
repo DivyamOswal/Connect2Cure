@@ -1,3 +1,4 @@
+// src/pages/PatientBilling.jsx
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import api from "../../api/axios";
@@ -12,7 +13,10 @@ const PatientBilling = () => {
   };
 
   const [payments, setPayments] = useState([]);
-  const [summary, setSummary] = useState({ totalPaid: 0, totalCount: 0 });
+  const [summary, setSummary] = useState({
+    totalPaid: 0,
+    totalCount: 0,
+  });
 
   const [creditTxs, setCreditTxs] = useState([]);
   const [creditSummary, setCreditSummary] = useState({
@@ -62,6 +66,7 @@ const PatientBilling = () => {
           (sum, t) => sum + (t.credits || 0),
           0
         );
+
         const totalAmountMinor = txs.reduce(
           (sum, t) => sum + (t.amount || 0),
           0
@@ -70,7 +75,7 @@ const PatientBilling = () => {
         setCreditTxs(txs);
         setCreditSummary({
           totalCredits,
-          totalAmount: totalAmountMinor,
+          totalAmount: (totalAmountMinor / 100).toFixed(0), // ✅ FIXED
         });
       } catch (err) {
         setError(
@@ -101,13 +106,6 @@ const PatientBilling = () => {
     );
   }
 
-  const formatStripeAmount = (amountMinor, currency = "inr") => {
-    const major = (amountMinor || 0) / 100;
-    const upper = currency?.toUpperCase?.() || "INR";
-    if (upper === "INR") return `₹${major.toFixed(2)}`;
-    return `${upper} ${major.toFixed(2)}`;
-  };
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       <div>
@@ -133,9 +131,7 @@ const PatientBilling = () => {
           label={t("summary.totalCredits")}
           value={`${creditSummary.totalCredits} ${t(
             "credits"
-          )} (${formatStripeAmount(
-            creditSummary.totalAmount
-          )})`}
+          )} (₹${creditSummary.totalAmount})`}
         />
       </div>
 
@@ -217,9 +213,37 @@ const PatientBilling = () => {
                   </td>
                   <td>{PLAN_NAMES[tx.planId] || tx.planId}</td>
                   <td>{tx.credits}</td>
+
+                  {/* 🔥 NEW BREAKDOWN UI */}
                   <td>
-                    {formatStripeAmount(tx.amount, tx.currency)}
+                    <div className="text-sm space-y-1">
+                      <div>
+                        ₹
+                        {tx.basePrice ||
+                          (tx.amount / 100).toFixed(0)}
+                      </div>
+
+                      <div className="text-xs text-gray-500">
+                        GST (18%): ₹{tx.gst || 0}
+                      </div>
+
+                      <div className="text-xs text-gray-500">
+                        Platform Fee (1%): ₹
+                        {tx.platformFee || 0}
+                      </div>
+
+                      <div className="font-semibold mt-1">
+                        Total: ₹
+                        {tx.total ||
+                          (tx.amount / 100).toFixed(0)}
+                      </div>
+
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded inline-block">
+                        Incl. GST
+                      </span>
+                    </div>
                   </td>
+
                   <td>{tx.status || "paid"}</td>
                 </tr>
               ))}
@@ -234,7 +258,9 @@ const PatientBilling = () => {
 const SummaryCard = ({ label, value }) => (
   <div className="bg-white rounded-xl shadow p-4">
     <p className="text-xs text-gray-500 mb-1">{label}</p>
-    <p className="text-2xl font-semibold text-gray-800">{value}</p>
+    <p className="text-2xl font-semibold text-gray-800">
+      {value}
+    </p>
   </div>
 );
 

@@ -7,15 +7,15 @@ const isProd = process.env.NODE_ENV === "production";
 
 const PLANS = {
   basic: {
-    stripePriceId: process.env.STRIPE_PRICE_BASIC,
+    price: 199,
     credits: 10,
   },
   pro: {
-    stripePriceId: process.env.STRIPE_PRICE_PRO,
+    price: 799,
     credits: 50,
   },
   premium: {
-    stripePriceId: process.env.STRIPE_PRICE_PREMIUM,
+    price: 1999,
     credits: 200,
   },
 };
@@ -31,9 +31,8 @@ export const createCheckoutSession = async (req, res) => {
     const plan = PLANS[planId];
 
     log("🔥 createCheckoutSession planId =", planId);
-    log("👉 Plan config =", plan);
 
-    if (!plan || !plan.stripePriceId) {
+    if (!plan) {
       return res.status(400).json({ message: "Invalid plan selected" });
     }
 
@@ -41,6 +40,12 @@ export const createCheckoutSession = async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
+
+    // 💰 CALCULATE PRICING
+    const basePrice = plan.price;
+    const gst = Math.round(basePrice * 0.18);
+    const platformFee = Math.round(basePrice * 0.01);
+    const total = basePrice + gst + platformFee;
 
     const clientUrl =
       process.env.CLIENT_URL ||
@@ -51,19 +56,37 @@ export const createCheckoutSession = async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+
       line_items: [
         {
-          price: plan.stripePriceId,
+          price_data: {
+            currency: "inr",
+            product_data: {
+              name: `${planId.toUpperCase()} Plan`,
+              description: `${plan.credits} AI credits`,
+            },
+            unit_amount: total * 100, // paise
+          },
           quantity: 1,
         },
       ],
+
       customer_email: user.email,
+
       success_url: `${clientUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&type=credits`,
       cancel_url: `${clientUrl}/payment-cancelled`,
+
       metadata: {
         userId: user._id.toString(),
         planId,
         credits: plan.credits.toString(),
+
+        // 🔥 store breakdown
+        basePrice: basePrice.toString(),
+        gst: gst.toString(),
+        platformFee: platformFee.toString(),
+        total: total.toString(),
+
         type: "credits",
       },
     });
@@ -143,15 +166,23 @@ const applyCreditsAndLogTransaction = async ({
   });
 
   if (!existing) {
-    await BillingTransaction.create({
-      user: userId,
-      stripeSessionId: session.id,
-      planId: planId || "unknown",
-      credits: creditsNum,
-      amount: amountTotal,
-      currency,
-      status: session.payment_status,
-    });
+    const metadata = session.metadata || {};
+
+await BillingTransaction.create({
+  user: userId,
+  stripeSessionId: session.id,
+  planId: planId || "unknown",
+  credits: creditsNum,
+  amount: amountTotal,
+  currency,
+  status: session.payment_status,
+
+  // 🔥 NEW FIELDS
+  basePrice: Number(metadata.basePrice || 0),
+  gst: Number(metadata.gst || 0),
+  platformFee: Number(metadata.platformFee || 0),
+  total: Number(metadata.total || 0),
+});
     console.log(
       `✅ Added ${creditsNum} credits & logged transaction for user ${userId}`
     );

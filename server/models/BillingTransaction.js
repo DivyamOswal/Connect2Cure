@@ -14,25 +14,46 @@ const billingTransactionSchema = new mongoose.Schema(
       unique: true,
     },
     planId: {
-      type: String, // "basic" | "pro" | "premium"
+      type: String,
       required: true,
     },
     credits: {
       type: Number,
       required: true,
     },
-    // store amount in smallest units (paise), front-end will divide by 100
+
+    // Stripe total amount (in paise)
     amount: {
       type: Number,
       required: true,
     },
+
     currency: {
       type: String,
       default: "inr",
     },
+
     status: {
       type: String,
-      default: "paid", // or 'paid', 'refunded', etc.
+      default: "paid",
+    },
+
+    // 🔥 NEW FIELDS (ADD THESE)
+    basePrice: {
+      type: Number, // in ₹
+      default: 0,
+    },
+    gst: {
+      type: Number, // in ₹
+      default: 0,
+    },
+    platformFee: {
+      type: Number, // in ₹
+      default: 0,
+    },
+    total: {
+      type: Number, // in ₹ (base + gst + platform)
+      default: 0,
     },
   },
   { timestamps: true }
