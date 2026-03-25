@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import socket from "../../socket";
 import ChatSidebar from "../../components/ChatAndVideo/ChatSidebar";
@@ -14,45 +14,73 @@ const ChatPage = () => {
   const [threads, setThreads] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
-
-  // 🔥 NEW STATE
   const [incomingCall, setIncomingCall] = useState(null);
+
+  const isSocketReady = useRef(false);
 
   // ================= AUTH =================
   useEffect(() => {
-    if (!token) return navigate("/login");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     socket.emit("authenticate", token);
-  }, [token]);
+
+    socket.on("authenticated", () => {
+      console.log("✅ Socket authenticated");
+      isSocketReady.current = true;
+    });
+
+    return () => {
+      socket.off("authenticated");
+    };
+  }, [token, navigate]);
 
   // ================= INCOMING CALL =================
   useEffect(() => {
     const handleIncomingCall = ({ callerId, offer }) => {
+      console.log("📞 Incoming call:", callerId);
+
       if (!callerId || !offer) return;
 
-      // 🔥 show popup instead of auto navigation
       setIncomingCall({ callerId, offer });
     };
 
     socket.on("incoming-call", handleIncomingCall);
 
-    return () => socket.off("incoming-call", handleIncomingCall);
+    return () => {
+      socket.off("incoming-call", handleIncomingCall);
+    };
   }, []);
 
   // ================= LOAD THREADS =================
   useEffect(() => {
     if (!token) return;
 
-    fetch(`${API_BASE_URL}/messages/threads`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchThreads = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/messages/threads`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch threads");
+
+        const data = await res.json();
+
         const arr = Array.isArray(data) ? data : [];
         setThreads(arr);
 
-        if (arr.length) setSelectedUser(arr[0].user);
-      })
-      .catch(() => setThreads([]));
+        if (arr.length > 0) {
+          setSelectedUser(arr[0].user);
+        }
+      } catch (err) {
+        console.error("Threads error:", err);
+        setThreads([]);
+      }
+    };
+
+    fetchThreads();
   }, [token]);
 
   // ================= LOAD MESSAGES =================
@@ -61,40 +89,51 @@ const ChatPage = () => {
 
     setSelectedUser(user);
 
-    const res = await fetch(
-      `${API_BASE_URL}/messages/conversation/${user._id}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/messages/conversation/${user._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    const data = await res.json();
-    setMessages(Array.isArray(data) ? data : []);
+      if (!res.ok) throw new Error("Conversation fetch failed");
+
+      const data = await res.json();
+      setMessages(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Conversation error:", err);
+      setMessages([]);
+    }
   };
 
   // ================= SOCKET MESSAGES =================
   useEffect(() => {
-    const handler = (msg) => {
+    const handleMessage = (msg) => {
       if (!msg) return;
 
       setMessages((prev) => {
+        if (!Array.isArray(prev)) return [msg];
+
+        // prevent duplicates
         if (prev.some((m) => m._id === msg._id)) return prev;
+
         return [...prev, msg];
       });
     };
 
-    socket.on("message-sent", handler);
-    socket.on("receive-message", handler);
+    socket.on("message-sent", handleMessage);
+    socket.on("receive-message", handleMessage);
 
     return () => {
-      socket.off("message-sent", handler);
-      socket.off("receive-message", handler);
+      socket.off("message-sent", handleMessage);
+      socket.off("receive-message", handleMessage);
     };
   }, []);
 
   // ================= SEND =================
   const handleSendMessage = ({ text }) => {
-    if (!selectedUser || !text?.trim()) return;
+    if (!selectedUser?._id || !text?.trim()) return;
 
     socket.emit("send-message", {
       receiverId: selectedUser._id,
@@ -104,11 +143,38 @@ const ChatPage = () => {
 
   // ================= START CALL =================
   const handleStartCall = (id) => {
+    if (!id || !isSocketReady.current) {
+      console.warn("Socket not ready");
+      return;
+    }
+
     navigate(`/video-call/${id}`);
   };
 
+  // ================= ACCEPT CALL =================
+  const handleAcceptCall = () => {
+    if (!incomingCall) return;
+
+    navigate(`/video-call/${incomingCall.callerId}`, {
+      state: { offer: incomingCall.offer },
+    });
+
+    setIncomingCall(null);
+  };
+
+  // ================= REJECT CALL =================
+  const handleRejectCall = () => {
+    if (!incomingCall) return;
+
+    socket.emit("reject-call", {
+      callerId: incomingCall.callerId,
+    });
+
+    setIncomingCall(null);
+  };
+
   return (
-    <div className="h-screen flex">
+    <div className="h-screen flex bg-gray-100">
       <ChatSidebar
         threads={threads}
         selected={selectedUser}
@@ -122,32 +188,25 @@ const ChatPage = () => {
         onCall={handleStartCall}
       />
 
-      {/* 🔥 INCOMING CALL MODAL */}
+      {/* ================= INCOMING CALL MODAL ================= */}
       {incomingCall && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg text-center shadow-lg">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-80">
             <h2 className="text-lg font-semibold">Incoming Call</h2>
+            <p className="text-sm text-gray-500 mt-2">
+              Someone is calling you...
+            </p>
 
-            <div className="flex gap-4 mt-4 justify-center">
+            <div className="flex gap-4 mt-6 justify-center">
               <button
-                onClick={() => {
-                  navigate(`/video-call/${incomingCall.callerId}`, {
-                    state: { offer: incomingCall.offer },
-                  });
-                  setIncomingCall(null);
-                }}
+                onClick={handleAcceptCall}
                 className="bg-green-600 text-white px-4 py-2 rounded"
               >
                 Accept
               </button>
 
               <button
-                onClick={() => {
-                  socket.emit("reject-call", {
-                    callerId: incomingCall.callerId,
-                  });
-                  setIncomingCall(null);
-                }}
+                onClick={handleRejectCall}
                 className="bg-red-600 text-white px-4 py-2 rounded"
               >
                 Reject
