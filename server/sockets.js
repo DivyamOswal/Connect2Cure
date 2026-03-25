@@ -102,60 +102,69 @@ export default function registerSockets(io) {
     });
 
     // =========================
-    // 🎥 VIDEO CALL (WEBRTC)
-    // =========================
+// 🎥 VIDEO CALL (FINAL FLOW)
+// =========================
 
-    // CALL INITIATE (OFFER)
-    socket.on("call-user", ({ receiverId, offer }) => {
-      if (!socket.user || !receiverId || !offer) return;
-
-      const recSocket = onlineUsers.get(String(receiverId));
-
-      if (recSocket) {
-        io.to(recSocket).emit("incoming-call", {
-          callerId: socket.user.id,
-          offer,
-        });
-      }
+// 1) Caller triggers ring (NO offer yet)
+socket.on("call-user-init", ({ receiverId }) => {
+  const recSocket = onlineUsers.get(String(receiverId));
+  if (recSocket) {
+    io.to(recSocket).emit("incoming-call-notify", {
+      callerId: socket.user.id,
     });
+  }
+});
 
-    // CALL ANSWER
-    socket.on("call-answer", ({ callerId, answer }) => {
-      const callerSocket = onlineUsers.get(String(callerId));
+// 2) Receiver accepts → notify caller to start offer
+socket.on("accept-call", ({ callerId }) => {
+  const callerSocket = onlineUsers.get(String(callerId));
+  if (callerSocket) {
+    io.to(callerSocket).emit("call-accepted");
+  }
+});
 
-      if (callerSocket) {
-        io.to(callerSocket).emit("call-answer", { answer });
-      }
+// 3) Caller sends offer AFTER accept
+socket.on("call-user", ({ receiverId, offer }) => {
+  const recSocket = onlineUsers.get(String(receiverId));
+  if (recSocket) {
+    io.to(recSocket).emit("incoming-call", {
+      callerId: socket.user.id,
+      offer,
     });
+  }
+});
 
-    // ICE CANDIDATE (VERY IMPORTANT)
-    socket.on("ice-candidate", ({ to, candidate }) => {
-      const targetSocket = onlineUsers.get(String(to));
+// 4) Receiver answers
+socket.on("call-answer", ({ callerId, answer }) => {
+  const callerSocket = onlineUsers.get(String(callerId));
+  if (callerSocket) {
+    io.to(callerSocket).emit("call-answer", { answer });
+  }
+});
 
-      if (targetSocket) {
-        io.to(targetSocket).emit("ice-candidate", {
-          candidate,
-        });
-      }
-    });
+// 5) ICE exchange
+socket.on("ice-candidate", ({ to, candidate }) => {
+  const targetSocket = onlineUsers.get(String(to));
+  if (targetSocket) {
+    io.to(targetSocket).emit("ice-candidate", { candidate });
+  }
+});
 
-    // CALL REJECT
-    socket.on("reject-call", ({ callerId }) => {
-      const callerSocket = onlineUsers.get(String(callerId));
+// 6) Reject
+socket.on("reject-call", ({ callerId }) => {
+  const callerSocket = onlineUsers.get(String(callerId));
+  if (callerSocket) {
+    io.to(callerSocket).emit("call-rejected");
+  }
+});
 
-      if (callerSocket) {
-        io.to(callerSocket).emit("call-rejected");
-      }
-    });
-
-    // CALL END
-    socket.on("end-call", ({ receiverId }) => {
-      const recSocket = onlineUsers.get(String(receiverId));
-
-      if (recSocket) {
-        io.to(recSocket).emit("call-ended");
-      }
-    });
+// 7) End
+socket.on("end-call", ({ receiverId }) => {
+  const recSocket = onlineUsers.get(String(receiverId));
+  if (recSocket) {
+    io.to(recSocket).emit("call-ended");
+  }
+});
 
     // =========================
     // DISCONNECT
