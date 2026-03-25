@@ -1,20 +1,16 @@
 import React, { useEffect, useRef } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import socket from "../../socket";
 
 const VideoCallPage = () => {
   const { otherUserId } = useParams();
-  const { state } = useLocation();
   const navigate = useNavigate();
-
-  const isCaller = state?.isCaller;
-  const isReceiver = state?.isReceiver;
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const pcRef = useRef(null);
   const streamRef = useRef(null);
-  const iceQueue = useRef([]); // 🔥 FIX
+  const iceQueue = useRef([]);
 
   // ================= CREATE PEER =================
   const createPeer = async () => {
@@ -26,7 +22,6 @@ const VideoCallPage = () => {
 
     pcRef.current = pc;
 
-    // 🎥 LOCAL STREAM
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
@@ -39,7 +34,7 @@ const VideoCallPage = () => {
       pc.addTrack(track, stream);
     });
 
-    // 🎥 REMOTE STREAM (CRITICAL FIX)
+    // 🔥 REMOTE VIDEO FIX
     pc.ontrack = (event) => {
       console.log("📺 Remote stream received");
 
@@ -52,7 +47,6 @@ const VideoCallPage = () => {
       });
     };
 
-    // 🌐 ICE
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("ice-candidate", {
@@ -65,13 +59,15 @@ const VideoCallPage = () => {
 
   // ================= INIT =================
   useEffect(() => {
-    createPeer();
-
+    // 🔥 REGISTER FIRST
     socket.on("call-accepted", handleAccepted);
     socket.on("incoming-call", handleIncoming);
     socket.on("call-answer", handleAnswer);
     socket.on("ice-candidate", handleICE);
     socket.on("call-ended", handleEnd);
+
+    // THEN create peer
+    createPeer();
 
     return () => {
       socket.off("call-accepted", handleAccepted);
@@ -85,8 +81,6 @@ const VideoCallPage = () => {
 
   // ================= CALLER =================
   const handleAccepted = async () => {
-    if (!isCaller) return;
-
     console.log("📤 Creating OFFER");
 
     const offer = await pcRef.current.createOffer();
@@ -100,13 +94,10 @@ const VideoCallPage = () => {
 
   // ================= RECEIVER =================
   const handleIncoming = async ({ offer }) => {
-    if (!isReceiver) return;
-
     console.log("📥 Received OFFER");
 
     await pcRef.current.setRemoteDescription(offer);
 
-    // 🔥 Apply queued ICE
     iceQueue.current.forEach((c) =>
       pcRef.current.addIceCandidate(c)
     );
@@ -127,7 +118,6 @@ const VideoCallPage = () => {
 
     await pcRef.current.setRemoteDescription(answer);
 
-    // 🔥 Apply queued ICE
     iceQueue.current.forEach((c) =>
       pcRef.current.addIceCandidate(c)
     );
@@ -136,12 +126,10 @@ const VideoCallPage = () => {
 
   // ================= ICE =================
   const handleICE = async ({ candidate }) => {
-    if (!pcRef.current) return;
-
     if (pcRef.current.remoteDescription) {
       await pcRef.current.addIceCandidate(candidate);
     } else {
-      iceQueue.current.push(candidate); // 🔥 FIX
+      iceQueue.current.push(candidate);
     }
   };
 
@@ -165,20 +153,8 @@ const VideoCallPage = () => {
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center">
-      {/* 🔥 LOCAL */}
-      <video
-        ref={localVideoRef}
-        autoPlay
-        muted
-        className="w-64 border"
-      />
-
-      {/* 🔥 REMOTE */}
-      <video
-        ref={remoteVideoRef}
-        autoPlay
-        className="w-64 mt-4 border"
-      />
+      <video ref={localVideoRef} autoPlay muted className="w-64 border" />
+      <video ref={remoteVideoRef} autoPlay className="w-64 mt-4 border" />
 
       <button
         onClick={() => {
