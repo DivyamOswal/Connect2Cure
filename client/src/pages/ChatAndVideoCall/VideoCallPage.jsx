@@ -6,13 +6,13 @@ const VideoCallPage = () => {
   const { otherUserId } = useParams();
   const navigate = useNavigate();
 
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
+  const localRef = useRef(null);
+  const remoteRef = useRef(null);
   const pcRef = useRef(null);
   const streamRef = useRef(null);
   const iceQueue = useRef([]);
 
-  // ================= CREATE PEER =================
+  // CREATE PEER
   const createPeer = async () => {
     if (pcRef.current) return;
 
@@ -28,79 +28,71 @@ const VideoCallPage = () => {
     });
 
     streamRef.current = stream;
-    localVideoRef.current.srcObject = stream;
+    localRef.current.srcObject = stream;
 
-    stream.getTracks().forEach((track) => {
-      pc.addTrack(track, stream);
-    });
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-    // 🔥 REMOTE VIDEO FIX
-    pc.ontrack = (event) => {
-      console.log("📺 Remote stream received");
-
-      if (!remoteVideoRef.current.srcObject) {
-        remoteVideoRef.current.srcObject = new MediaStream();
+    pc.ontrack = (e) => {
+      if (!remoteRef.current.srcObject) {
+        remoteRef.current.srcObject = new MediaStream();
       }
 
-      event.streams[0].getTracks().forEach((track) => {
-        remoteVideoRef.current.srcObject.addTrack(track);
+      e.streams[0].getTracks().forEach((track) => {
+        remoteRef.current.srcObject.addTrack(track);
       });
     };
 
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
         socket.emit("ice-candidate", {
           to: otherUserId,
-          candidate: event.candidate,
+          candidate: e.candidate,
         });
       }
     };
   };
 
-  // ================= INIT =================
   useEffect(() => {
-    // 🔥 REGISTER FIRST
-    socket.on("call-accepted", handleAccepted);
+    createPeer();
+
     socket.on("incoming-call", handleIncoming);
     socket.on("call-answer", handleAnswer);
     socket.on("ice-candidate", handleICE);
     socket.on("call-ended", handleEnd);
 
-    // THEN create peer
-    createPeer();
-
     return () => {
-      socket.off("call-accepted", handleAccepted);
-      socket.off("incoming-call", handleIncoming);
-      socket.off("call-answer", handleAnswer);
-      socket.off("ice-candidate", handleICE);
-      socket.off("call-ended", handleEnd);
+      socket.off("incoming-call");
+      socket.off("call-answer");
+      socket.off("ice-candidate");
+      socket.off("call-ended");
       cleanup();
     };
   }, []);
 
-  // ================= CALLER =================
-  const handleAccepted = async () => {
-    console.log("📤 Creating OFFER");
+  // CALLER → CREATE OFFER
+  useEffect(() => {
+    const startCall = async () => {
+      if (!pcRef.current) await createPeer();
 
-    const offer = await pcRef.current.createOffer();
-    await pcRef.current.setLocalDescription(offer);
+      const offer = await pcRef.current.createOffer();
+      await pcRef.current.setLocalDescription(offer);
 
-    socket.emit("call-user", {
-      receiverId: otherUserId,
-      offer,
-    });
-  };
+      socket.emit("call-user", {
+        receiverId: otherUserId,
+        offer,
+      });
+    };
 
-  // ================= RECEIVER =================
+    startCall();
+  }, []);
+
+  // RECEIVER
   const handleIncoming = async ({ offer }) => {
-    console.log("📥 Received OFFER");
+    if (!pcRef.current) await createPeer();
 
     await pcRef.current.setRemoteDescription(offer);
 
-    iceQueue.current.forEach((c) =>
-      pcRef.current.addIceCandidate(c)
-    );
+    iceQueue.current.forEach((c) => pcRef.current.addIceCandidate(c));
     iceQueue.current = [];
 
     const answer = await pcRef.current.createAnswer();
@@ -112,19 +104,15 @@ const VideoCallPage = () => {
     });
   };
 
-  // ================= ANSWER =================
+  // ANSWER
   const handleAnswer = async ({ answer }) => {
-    console.log("📥 Received ANSWER");
-
     await pcRef.current.setRemoteDescription(answer);
 
-    iceQueue.current.forEach((c) =>
-      pcRef.current.addIceCandidate(c)
-    );
+    iceQueue.current.forEach((c) => pcRef.current.addIceCandidate(c));
     iceQueue.current = [];
   };
 
-  // ================= ICE =================
+  // ICE
   const handleICE = async ({ candidate }) => {
     if (pcRef.current.remoteDescription) {
       await pcRef.current.addIceCandidate(candidate);
@@ -133,7 +121,7 @@ const VideoCallPage = () => {
     }
   };
 
-  // ================= END =================
+  // END
   const handleEnd = () => {
     cleanup();
     navigate(-1);
@@ -153,8 +141,8 @@ const VideoCallPage = () => {
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center">
-      <video ref={localVideoRef} autoPlay muted className="w-64 border" />
-      <video ref={remoteVideoRef} autoPlay className="w-64 mt-4 border" />
+      <video ref={localRef} autoPlay muted className="w-64 border" />
+      <video ref={remoteRef} autoPlay className="w-64 mt-4 border" />
 
       <button
         onClick={() => {

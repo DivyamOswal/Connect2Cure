@@ -1,5 +1,3 @@
-// server/index.js
-
 import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
@@ -12,132 +10,78 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // change in production
+    origin: "*",
     methods: ["GET", "POST"],
     credentials: true,
   },
   transports: ["websocket", "polling"],
-  pingTimeout: 60000,
-  pingInterval: 25000,
 });
 
-// store online users
-const onlineUsers = new Map(); // userId -> socketId
+const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
-  console.log("✅ Socket connected:", socket.id);
+  console.log("✅ Connected:", socket.id);
 
-  // =========================
-  // AUTH
-  // =========================
+  // ================= AUTH =================
   socket.on("authenticate", (token) => {
     try {
-      if (!token) return socket.disconnect();
-
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-
       socket.user = { id: String(decoded.userId) };
 
       onlineUsers.set(socket.user.id, socket.id);
 
-      console.log("🟢 Authenticated:", socket.user.id);
-      console.log("🟢 Online users:", Array.from(onlineUsers.keys()));
-
       socket.emit("authenticated");
       io.emit("online-users", Array.from(onlineUsers.keys()));
-
     } catch (err) {
-      console.error("❌ Auth failed:", err.message);
       socket.disconnect();
     }
   });
 
-  // =========================
-  // CHAT
-  // =========================
-  socket.on("send-message", async ({ receiverId, text, attachment }) => {
-    try {
-      if (!socket.user || !receiverId) return;
+  // ================= CHAT =================
+  socket.on("send-message", async ({ receiverId, text }) => {
+    if (!socket.user) return;
 
-      const message = await Message.create({
-        sender: socket.user.id,
-        receiver: receiverId,
-        text: text || "",
-        attachment: attachment || null,
-      });
+    const message = await Message.create({
+      sender: socket.user.id,
+      receiver: receiverId,
+      text,
+    });
 
-      socket.emit("message-sent", message);
+    socket.emit("message-sent", message);
 
-      const recSocket = onlineUsers.get(String(receiverId));
-
-      if (recSocket) {
-        io.to(recSocket).emit("receive-message", message);
-      } else {
-        console.log("❌ Receiver offline:", receiverId);
-      }
-
-    } catch (err) {
-      console.error("💥 send-message error:", err);
-    }
+    const rec = onlineUsers.get(String(receiverId));
+    if (rec) io.to(rec).emit("receive-message", message);
   });
 
-  // =========================
-  // TYPING
-  // =========================
-  socket.on("typing", ({ receiverId }) => {
-    const recSocket = onlineUsers.get(String(receiverId));
-    if (recSocket) {
-      io.to(recSocket).emit("typing", { userId: socket.user.id });
-    }
-  });
+  // ================= VIDEO CALL =================
 
-  socket.on("stop-typing", ({ receiverId }) => {
-    const recSocket = onlineUsers.get(String(receiverId));
-    if (recSocket) {
-      io.to(recSocket).emit("stop-typing", { userId: socket.user.id });
-    }
-  });
-
-  // =========================
-  // 🎥 VIDEO CALL (FINAL FLOW)
-  // =========================
-
-  // 1️⃣ CALL INIT → show popup
+  // 1️⃣ INIT CALL
   socket.on("call-user-init", ({ receiverId }) => {
-    console.log("📥 CALL INIT:", receiverId);
-
-    const recSocket = onlineUsers.get(String(receiverId));
-
-    console.log("🎯 Receiver socket:", recSocket);
-
-    if (recSocket) {
-      io.to(recSocket).emit("incoming-call-notify", {
+    const rec = onlineUsers.get(String(receiverId));
+    if (rec) {
+      io.to(rec).emit("incoming-call-notify", {
         callerId: socket.user.id,
       });
-    } else {
-      console.log("❌ Receiver not online");
     }
   });
 
   // 2️⃣ ACCEPT CALL
   socket.on("accept-call", ({ callerId }) => {
-    console.log("✅ Call accepted");
-
     const callerSocket = onlineUsers.get(String(callerId));
 
     if (callerSocket) {
-      io.to(callerSocket).emit("call-accepted");
+      io.to(callerSocket).emit("call-accepted", {
+        receiverId: socket.user.id, // 🔥 FIX
+      });
     }
   });
 
   // 3️⃣ SEND OFFER
   socket.on("call-user", ({ receiverId, offer }) => {
-    console.log("📤 Sending OFFER");
+    const rec = onlineUsers.get(String(receiverId));
 
-    const recSocket = onlineUsers.get(String(receiverId));
-
-    if (recSocket) {
-      io.to(recSocket).emit("incoming-call", {
+    if (rec) {
+      io.to(rec).emit("incoming-call", {
         callerId: socket.user.id,
         offer,
       });
@@ -146,8 +90,6 @@ io.on("connection", (socket) => {
 
   // 4️⃣ ANSWER
   socket.on("call-answer", ({ callerId, answer }) => {
-    console.log("📥 Answer received");
-
     const callerSocket = onlineUsers.get(String(callerId));
 
     if (callerSocket) {
@@ -157,60 +99,24 @@ io.on("connection", (socket) => {
 
   // 5️⃣ ICE
   socket.on("ice-candidate", ({ to, candidate }) => {
-    const targetSocket = onlineUsers.get(String(to));
-
-    if (targetSocket) {
-      io.to(targetSocket).emit("ice-candidate", { candidate });
+    const target = onlineUsers.get(String(to));
+    if (target) {
+      io.to(target).emit("ice-candidate", { candidate });
     }
   });
 
-  // 6️⃣ REJECT
-  socket.on("reject-call", ({ callerId }) => {
-    console.log("❌ Call rejected");
-
-    const callerSocket = onlineUsers.get(String(callerId));
-
-    if (callerSocket) {
-      io.to(callerSocket).emit("call-rejected");
-    }
-  });
-
-  // 7️⃣ END CALL
+  // 6️⃣ END
   socket.on("end-call", ({ receiverId }) => {
-    console.log("🔴 Call ended");
-
-    const recSocket = onlineUsers.get(String(receiverId));
-
-    if (recSocket) {
-      io.to(recSocket).emit("call-ended");
-    }
+    const rec = onlineUsers.get(String(receiverId));
+    if (rec) io.to(rec).emit("call-ended");
   });
 
-  // =========================
-  // DISCONNECT
-  // =========================
   socket.on("disconnect", () => {
-    if (socket.user?.id) {
-      onlineUsers.delete(socket.user.id);
-    }
-
-    console.log("🔌 Disconnected:", socket.id);
-    console.log("🟢 Online users:", Array.from(onlineUsers.keys()));
-
+    if (socket.user?.id) onlineUsers.delete(socket.user.id);
     io.emit("online-users", Array.from(onlineUsers.keys()));
   });
 });
 
-// =========================
-// DEBUG ROUTE
-// =========================
-app.get("/cors-debug", (req, res) => {
-  res.json({
-    ok: true,
-    origin: req.headers.origin || null,
-  });
-});
-
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log("🚀 Server running");
 });
