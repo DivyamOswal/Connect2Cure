@@ -82,7 +82,7 @@ const Doctors = () => {
                           src={imgSrc}
                           alt={doctor.name}
                           loading="lazy"
-                          className="w-full h-60 object-cover rounded-t-lg"
+                          className="w-full h-full object-cover rounded-t-lg"
                         />
                       )}
 

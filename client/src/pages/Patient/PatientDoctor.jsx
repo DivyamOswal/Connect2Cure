@@ -94,7 +94,7 @@ const PatientDoctor = () => {
                   <img
                     src={imgSrc}
                     alt={doctor.name}
-                    className="w-full h-40 object-cover"
+                    className="w-full h-full object-cover"
                   />
                 )}
 
