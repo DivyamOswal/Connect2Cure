@@ -76,7 +76,9 @@ export default function registerSockets(io) {
 
       const recSocket = onlineUsers.get(String(receiverId));
 
-      console.log("🎯 Found receiver socket:", recSocket);
+      // 🔥 ADD THESE TWO LINES
+      console.log("🎯 Receiver socket:", recSocket);
+      console.log("🟢 Online users:", Array.from(onlineUsers.keys()));
 
       if (recSocket) {
         io.to(recSocket).emit("incoming-call-notify", {
