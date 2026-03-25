@@ -15,6 +15,9 @@ const ChatPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
 
+  // 🔥 NEW STATE
+  const [incomingCall, setIncomingCall] = useState(null);
+
   // ================= AUTH =================
   useEffect(() => {
     if (!token) return navigate("/login");
@@ -26,12 +29,12 @@ const ChatPage = () => {
     const handleIncomingCall = ({ callerId, offer }) => {
       if (!callerId || !offer) return;
 
-      navigate(`/video-call/${callerId}`, {
-        state: { offer },
-      });
+      // 🔥 show popup instead of auto navigation
+      setIncomingCall({ callerId, offer });
     };
 
     socket.on("incoming-call", handleIncomingCall);
+
     return () => socket.off("incoming-call", handleIncomingCall);
   }, []);
 
@@ -118,6 +121,41 @@ const ChatPage = () => {
         onSend={handleSendMessage}
         onCall={handleStartCall}
       />
+
+      {/* 🔥 INCOMING CALL MODAL */}
+      {incomingCall && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg text-center shadow-lg">
+            <h2 className="text-lg font-semibold">Incoming Call</h2>
+
+            <div className="flex gap-4 mt-4 justify-center">
+              <button
+                onClick={() => {
+                  navigate(`/video-call/${incomingCall.callerId}`, {
+                    state: { offer: incomingCall.offer },
+                  });
+                  setIncomingCall(null);
+                }}
+                className="bg-green-600 text-white px-4 py-2 rounded"
+              >
+                Accept
+              </button>
+
+              <button
+                onClick={() => {
+                  socket.emit("reject-call", {
+                    callerId: incomingCall.callerId,
+                  });
+                  setIncomingCall(null);
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
