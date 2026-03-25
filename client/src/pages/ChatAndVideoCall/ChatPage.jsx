@@ -22,17 +22,17 @@ const ChatPage = () => {
     socket.emit("authenticate", token);
   }, [token]);
 
-  // ================= INCOMING CALL =================
+  // ================= CALL EVENTS =================
   useEffect(() => {
     const handleIncoming = ({ callerId }) => {
       console.log("📞 Incoming:", callerId);
       setIncomingCall({ callerId });
     };
 
-    const handleAccepted = ({ receiverId }) => {
-      console.log("✅ Receiver accepted → go to call page");
+    const handleAccepted = () => {
+      console.log("✅ Call accepted");
 
-      navigate(`/video-call/${receiverId}`, {
+      navigate(`/video-call/${selectedUser._id}`, {
         state: { isCaller: true },
       });
     };
@@ -49,7 +49,7 @@ const ChatPage = () => {
       socket.off("call-rejected");
       socket.off("call-ended");
     };
-  }, []);
+  }, [selectedUser]);
 
   // ================= LOAD THREADS =================
   useEffect(() => {
@@ -67,7 +67,7 @@ const ChatPage = () => {
       .catch(() => setThreads([]));
   }, [token]);
 
-  // ================= LOAD MESSAGES =================
+  // ================= SELECT USER =================
   const handleSelectUser = async (user) => {
     if (!user?._id) return;
 
@@ -113,6 +113,8 @@ const ChatPage = () => {
 
   // ================= START CALL =================
   const handleStartCall = (id) => {
+    if (!id) return;
+
     console.log("📤 Call init:", id);
 
     socket.emit("call-user-init", {
@@ -157,24 +159,16 @@ const ChatPage = () => {
         onCall={handleStartCall}
       />
 
-      {/* Incoming Call Modal */}
       {incomingCall && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white p-6 rounded text-center">
-            <h2 className="text-lg font-semibold">Incoming Call</h2>
+            <h2>Incoming Call</h2>
 
             <div className="flex gap-4 mt-4">
-              <button
-                onClick={handleAccept}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-              >
+              <button onClick={handleAccept} className="bg-green-500 px-4 py-2 text-white">
                 Accept
               </button>
-
-              <button
-                onClick={handleReject}
-                className="bg-red-600 text-white px-4 py-2 rounded"
-              >
+              <button onClick={handleReject} className="bg-red-500 px-4 py-2 text-white">
                 Reject
               </button>
             </div>

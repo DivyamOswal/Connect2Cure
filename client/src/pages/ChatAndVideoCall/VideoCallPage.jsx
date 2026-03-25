@@ -1,188 +1,162 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useRef } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import socket from "../../socket";
-import ChatSidebar from "../../components/ChatAndVideo/ChatSidebar";
-import ChatWindow from "../../components/ChatAndVideo/ChatWindow";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-
-const ChatPage = () => {
+const VideoCallPage = () => {
+  const { otherUserId } = useParams();
+  const { state } = useLocation();
   const navigate = useNavigate();
-  const token = localStorage.getItem("accessToken");
 
-  const [threads, setThreads] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [incomingCall, setIncomingCall] = useState(null);
+  const isCaller = state?.isCaller;
+  const isReceiver = state?.isReceiver;
 
-  // ================= AUTH =================
-  useEffect(() => {
-    if (!token) return navigate("/login");
-    socket.emit("authenticate", token);
-  }, [token]);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const pcRef = useRef(null);
+  const streamRef = useRef(null);
 
-  // ================= INCOMING CALL =================
-  useEffect(() => {
-    const handleIncoming = ({ callerId }) => {
-      console.log("📞 Incoming:", callerId);
-      setIncomingCall({ callerId });
+  // ================= CREATE PEER =================
+  const createPeer = async () => {
+    if (pcRef.current) return; // 🔥 prevent duplicate
+
+    pcRef.current = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
+
+    streamRef.current = stream;
+    localVideoRef.current.srcObject = stream;
+
+    stream.getTracks().forEach((track) => {
+      pcRef.current.addTrack(track, stream);
+    });
+
+    pcRef.current.ontrack = (e) => {
+      remoteVideoRef.current.srcObject = e.streams[0];
     };
 
-    const handleAccepted = ({ receiverId }) => {
-      console.log("✅ Receiver accepted → go to call page");
-
-      navigate(`/video-call/${receiverId}`, {
-        state: { isCaller: true },
-      });
+    pcRef.current.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("ice-candidate", {
+          to: otherUserId,
+          candidate: e.candidate,
+        });
+      }
     };
+  };
 
-    socket.on("incoming-call-notify", handleIncoming);
+  // ================= INIT =================
+  useEffect(() => {
+    createPeer();
+
     socket.on("call-accepted", handleAccepted);
-
-    socket.on("call-rejected", () => alert("Call rejected"));
-    socket.on("call-ended", () => alert("Call ended"));
+    socket.on("incoming-call", handleIncoming);
+    socket.on("call-answer", handleAnswer);
+    socket.on("ice-candidate", handleICE);
+    socket.on("call-ended", handleEnd);
 
     return () => {
-      socket.off("incoming-call-notify", handleIncoming);
       socket.off("call-accepted", handleAccepted);
-      socket.off("call-rejected");
-      socket.off("call-ended");
+      socket.off("incoming-call", handleIncoming);
+      socket.off("call-answer", handleAnswer);
+      socket.off("ice-candidate", handleICE);
+      socket.off("call-ended", handleEnd);
+      cleanup();
     };
   }, []);
 
-  // ================= LOAD THREADS =================
-  useEffect(() => {
-    if (!token) return;
+  // ================= CALLER =================
+  const handleAccepted = async () => {
+    if (!isCaller) return;
+    if (!pcRef.current || pcRef.current.signalingState === "closed") return;
 
-    fetch(`${API_BASE_URL}/messages/threads`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const arr = Array.isArray(data) ? data : [];
-        setThreads(arr);
-        if (arr.length) setSelectedUser(arr[0].user);
-      })
-      .catch(() => setThreads([]));
-  }, [token]);
+    console.log("📤 Creating OFFER");
 
-  // ================= LOAD MESSAGES =================
-  const handleSelectUser = async (user) => {
-    if (!user?._id) return;
+    const offer = await pcRef.current.createOffer();
+    await pcRef.current.setLocalDescription(offer);
 
-    setSelectedUser(user);
-
-    const res = await fetch(
-      `${API_BASE_URL}/messages/conversation/${user._id}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    const data = await res.json();
-    setMessages(Array.isArray(data) ? data : []);
-  };
-
-  // ================= SOCKET MESSAGES =================
-  useEffect(() => {
-    const handler = (msg) => {
-      if (!msg) return;
-
-      setMessages((prev) =>
-        prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]
-      );
-    };
-
-    socket.on("message-sent", handler);
-    socket.on("receive-message", handler);
-
-    return () => {
-      socket.off("message-sent", handler);
-      socket.off("receive-message", handler);
-    };
-  }, []);
-
-  // ================= SEND =================
-  const handleSendMessage = ({ text }) => {
-    if (!selectedUser || !text?.trim()) return;
-
-    socket.emit("send-message", {
-      receiverId: selectedUser._id,
-      text: text.trim(),
+    socket.emit("call-user", {
+      receiverId: otherUserId,
+      offer,
     });
   };
 
-  // ================= START CALL =================
-  const handleStartCall = (id) => {
-    console.log("📤 Call init:", id);
+  // ================= RECEIVER =================
+  const handleIncoming = async ({ offer }) => {
+    if (!isReceiver) return;
 
-    socket.emit("call-user-init", {
-      receiverId: id,
+    console.log("📥 Received OFFER");
+
+    if (!pcRef.current) await createPeer();
+
+    await pcRef.current.setRemoteDescription(offer);
+
+    const answer = await pcRef.current.createAnswer();
+    await pcRef.current.setLocalDescription(answer);
+
+    socket.emit("call-answer", {
+      callerId: otherUserId,
+      answer,
     });
   };
 
-  // ================= ACCEPT =================
-  const handleAccept = () => {
-    socket.emit("accept-call", {
-      callerId: incomingCall.callerId,
-    });
+  // ================= ANSWER =================
+  const handleAnswer = async ({ answer }) => {
+    if (!pcRef.current) return;
 
-    navigate(`/video-call/${incomingCall.callerId}`, {
-      state: { isReceiver: true },
-    });
+    console.log("📥 Received ANSWER");
 
-    setIncomingCall(null);
+    await pcRef.current.setRemoteDescription(answer);
   };
 
-  // ================= REJECT =================
-  const handleReject = () => {
-    socket.emit("reject-call", {
-      callerId: incomingCall.callerId,
-    });
+  // ================= ICE =================
+  const handleICE = async ({ candidate }) => {
+    try {
+      if (pcRef.current) {
+        await pcRef.current.addIceCandidate(candidate);
+      }
+    } catch {}
+  };
 
-    setIncomingCall(null);
+  // ================= END =================
+  const handleEnd = () => {
+    cleanup();
+    navigate(-1);
+  };
+
+  const cleanup = () => {
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
   };
 
   return (
-    <div className="h-screen flex">
-      <ChatSidebar
-        threads={threads}
-        selected={selectedUser}
-        onSelect={handleSelectUser}
-      />
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center">
+      <video ref={localVideoRef} autoPlay muted className="w-64" />
+      <video ref={remoteVideoRef} autoPlay className="w-64 mt-4" />
 
-      <ChatWindow
-        user={selectedUser}
-        messages={messages}
-        onSend={handleSendMessage}
-        onCall={handleStartCall}
-      />
-
-      {/* Incoming Call Modal */}
-      {incomingCall && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded text-center">
-            <h2 className="text-lg font-semibold">Incoming Call</h2>
-
-            <div className="flex gap-4 mt-4">
-              <button
-                onClick={handleAccept}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-              >
-                Accept
-              </button>
-
-              <button
-                onClick={handleReject}
-                className="bg-red-600 text-white px-4 py-2 rounded"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <button
+        onClick={() => {
+          socket.emit("end-call", { receiverId: otherUserId });
+          cleanup();
+          navigate(-1);
+        }}
+        className="mt-6 bg-red-600 text-white px-6 py-2"
+      >
+        End Call
+      </button>
     </div>
   );
 };
 
-export default ChatPage;
+export default VideoCallPage;
