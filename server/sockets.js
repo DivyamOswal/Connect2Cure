@@ -16,22 +16,21 @@ export default function registerSockets(io) {
 
         socket.user = { id: decoded.userId };
 
-        onlineUsers.set(decoded.userId, socket.id);
+        onlineUsers.set(String(decoded.userId), socket.id);
 
-        console.log("🟢 Socket authenticated:", decoded.userId);
+        console.log("🟢 Authenticated:", decoded.userId);
 
         socket.emit("authenticated");
 
-        // broadcast online users
         io.emit("online-users", Array.from(onlineUsers.keys()));
       } catch (err) {
-        console.error("❌ Socket auth failed");
+        console.error("❌ Auth failed");
         socket.disconnect();
       }
     });
 
     // =========================
-    // SEND MESSAGE
+    // SEND MESSAGE (CHAT)
     // =========================
     socket.on("send-message", async ({ receiverId, text, attachment }) => {
       try {
@@ -44,11 +43,11 @@ export default function registerSockets(io) {
           attachment: attachment || null,
         });
 
-        // sender confirmation
+        // sender confirm
         socket.emit("message-sent", saved);
 
-        // receiver delivery
-        const recSocket = onlineUsers.get(receiverId);
+        // receiver deliver
+        const recSocket = onlineUsers.get(String(receiverId));
 
         if (recSocket) {
           io.to(recSocket).emit("receive-message", saved);
@@ -63,11 +62,13 @@ export default function registerSockets(io) {
     // =========================
     socket.on("read-message", async ({ messageId, senderId }) => {
       try {
+        if (!messageId) return;
+
         await Message.findByIdAndUpdate(messageId, {
           isRead: true,
         });
 
-        const senderSocket = onlineUsers.get(senderId);
+        const senderSocket = onlineUsers.get(String(senderId));
 
         if (senderSocket) {
           io.to(senderSocket).emit("message-read", messageId);
@@ -78,62 +79,78 @@ export default function registerSockets(io) {
     });
 
     // =========================
-    // TYPING INDICATOR
+    // TYPING
     // =========================
     socket.on("typing", ({ receiverId }) => {
-      const recSocket = onlineUsers.get(receiverId);
+      const recSocket = onlineUsers.get(String(receiverId));
 
       if (recSocket) {
         io.to(recSocket).emit("typing", {
-          userId: socket.user.id,
+          userId: socket.user?.id,
         });
       }
     });
 
     socket.on("stop-typing", ({ receiverId }) => {
-      const recSocket = onlineUsers.get(receiverId);
+      const recSocket = onlineUsers.get(String(receiverId));
 
       if (recSocket) {
         io.to(recSocket).emit("stop-typing", {
-          userId: socket.user.id,
+          userId: socket.user?.id,
         });
       }
     });
 
     // =========================
-    // VIDEO CALL SIGNALING
+    // 🎥 VIDEO CALL (WEBRTC)
     // =========================
 
-    socket.on("call-user", ({ receiverId, signalData, roomId }) => {
-      const recSocket = onlineUsers.get(receiverId);
+    // CALL INITIATE (OFFER)
+    socket.on("call-user", ({ receiverId, offer }) => {
+      if (!socket.user || !receiverId || !offer) return;
+
+      const recSocket = onlineUsers.get(String(receiverId));
 
       if (recSocket) {
         io.to(recSocket).emit("incoming-call", {
           callerId: socket.user.id,
-          signal: signalData,
-          roomId,
+          offer,
         });
       }
     });
 
-    socket.on("answer-call", ({ callerId, signal }) => {
-      const callerSocket = onlineUsers.get(callerId);
+    // CALL ANSWER
+    socket.on("call-answer", ({ callerId, answer }) => {
+      const callerSocket = onlineUsers.get(String(callerId));
 
       if (callerSocket) {
-        io.to(callerSocket).emit("call-answered", signal);
+        io.to(callerSocket).emit("call-answer", { answer });
       }
     });
 
+    // ICE CANDIDATE (VERY IMPORTANT)
+    socket.on("ice-candidate", ({ to, candidate }) => {
+      const targetSocket = onlineUsers.get(String(to));
+
+      if (targetSocket) {
+        io.to(targetSocket).emit("ice-candidate", {
+          candidate,
+        });
+      }
+    });
+
+    // CALL REJECT
     socket.on("reject-call", ({ callerId }) => {
-      const callerSocket = onlineUsers.get(callerId);
+      const callerSocket = onlineUsers.get(String(callerId));
 
       if (callerSocket) {
         io.to(callerSocket).emit("call-rejected");
       }
     });
 
+    // CALL END
     socket.on("end-call", ({ receiverId }) => {
-      const recSocket = onlineUsers.get(receiverId);
+      const recSocket = onlineUsers.get(String(receiverId));
 
       if (recSocket) {
         io.to(recSocket).emit("call-ended");
@@ -144,8 +161,8 @@ export default function registerSockets(io) {
     // DISCONNECT
     // =========================
     socket.on("disconnect", () => {
-      if (socket.user) {
-        onlineUsers.delete(socket.user.id);
+      if (socket.user?.id) {
+        onlineUsers.delete(String(socket.user.id));
       }
 
       io.emit("online-users", Array.from(onlineUsers.keys()));

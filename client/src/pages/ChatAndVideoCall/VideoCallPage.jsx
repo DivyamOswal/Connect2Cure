@@ -2,152 +2,185 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import socket from "../../socket";
 
-
 const VideoCallPage = () => {
-  const { otherUserId } = useParams(); // /video-call/:otherUserId
+  const { otherUserId } = useParams();
   const navigate = useNavigate();
   const token = localStorage.getItem("accessToken");
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const pcRef = useRef(null);
-  const [isCaller, setIsCaller] = useState(true); // when we navigate here, we start the call
 
-  // 1. Setup socket + WebRTC on mount
+  const [isCaller, setIsCaller] = useState(true);
+
   useEffect(() => {
     if (!token) {
       navigate("/login");
       return;
     }
 
-  
+    init();
 
-    // Prepare RTCPeerConnection
-    pcRef.current = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
-
-    pcRef.current.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("ice-candidate", {
-          receiverId: otherUserId,
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    pcRef.current.ontrack = (event) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    // get local media
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-        stream.getTracks().forEach((track) =>
-          pcRef.current.addTrack(track, stream)
-        );
-
-        // as caller: create offer
-        startCallAsCaller();
-      })
-      .catch((err) => {
-        console.error("getUserMedia error", err);
-        alert("Could not access camera/microphone");
-        navigate(-1);
-      });
-
-    // socket events
     socket.on("incoming-call", handleIncomingCall);
-    socket.on("call-answered", handleCallAnswered);
+    socket.on("call-answer", handleCallAnswered);
     socket.on("ice-candidate", handleRemoteIce);
     socket.on("call-ended", handleCallEnded);
 
     return () => {
       socket.off("incoming-call", handleIncomingCall);
-      socket.off("call-answered", handleCallAnswered);
+      socket.off("call-answer", handleCallAnswered);
       socket.off("ice-candidate", handleRemoteIce);
       socket.off("call-ended", handleCallEnded);
-
-      endCall();
+      cleanup();
     };
-  }, [otherUserId, token, navigate]);
+  }, [otherUserId]);
 
-  const startCallAsCaller = async () => {
+  // =========================
+  // INIT WEBRTC
+  // =========================
+  const init = async () => {
+    try {
+     pcRef.current = new RTCPeerConnection({
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+  ],
+});
+
+      pcRef.current.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit("ice-candidate", {
+            to: otherUserId,
+            candidate: e.candidate,
+          });
+        }
+      };
+
+      pcRef.current.ontrack = (e) => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = e.streams[0];
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      stream.getTracks().forEach((track) =>
+        pcRef.current.addTrack(track, stream)
+      );
+
+      // caller starts offer
+      startCall();
+    } catch (err) {
+      console.error("Init error:", err);
+      navigate(-1);
+    }
+  };
+
+  // =========================
+  // CALL START
+  // =========================
+  const startCall = async () => {
     try {
       setIsCaller(true);
-      const pc = pcRef.current;
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+
+      const offer = await pcRef.current.createOffer();
+      await pcRef.current.setLocalDescription(offer);
 
       socket.emit("call-user", {
         receiverId: otherUserId,
         offer,
       });
     } catch (err) {
-      console.error("startCallAsCaller error", err);
+      console.error("startCall error", err);
     }
   };
 
-  // When we are the callee (if you ever want to support answering from a link)
+  // =========================
+  // RECEIVER SIDE
+  // =========================
   const handleIncomingCall = async ({ callerId, offer }) => {
     if (callerId !== otherUserId) return;
+
     setIsCaller(false);
 
-    const pc = pcRef.current;
-    await pc.setRemoteDescription(offer);
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    socket.emit("answer-call", {
-      callerId,
-      answer,
-    });
-  };
-
-  const handleCallAnswered = async ({ answer }) => {
-    const pc = pcRef.current;
-    await pc.setRemoteDescription(answer);
-  };
-
-  const handleRemoteIce = async (candidate) => {
     try {
-      await pcRef.current.addIceCandidate(candidate);
+      await pcRef.current.setRemoteDescription(offer);
+
+      const answer = await pcRef.current.createAnswer();
+      await pcRef.current.setLocalDescription(answer);
+
+      socket.emit("call-answer", {
+        callerId,
+        answer,
+      });
     } catch (err) {
-      console.error("Error adding remote ICE candidate", err);
+      console.error("Incoming call error:", err);
     }
   };
 
+  // =========================
+  // ANSWER RECEIVED
+  // =========================
+  const handleCallAnswered = async ({ answer }) => {
+    try {
+      await pcRef.current?.setRemoteDescription(answer);
+    } catch (err) {
+      console.error("Answer error:", err);
+    }
+  };
+
+  // =========================
+  // ICE HANDLING
+  // =========================
+  const handleRemoteIce = async ({ candidate }) => {
+    try {
+      await pcRef.current?.addIceCandidate(candidate);
+    } catch (err) {
+      console.error("ICE error:", err);
+    }
+  };
+
+  // =========================
+  // CALL END
+  // =========================
   const handleCallEnded = () => {
-    alert("Call ended by other user");
-    endCall();
+    alert("Call ended");
+    cleanup();
     navigate(-1);
   };
 
-  const endCall = () => {
+  const cleanup = () => {
     if (pcRef.current) {
-      pcRef.current.getSenders().forEach((s) => s.track && s.track.stop());
       pcRef.current.close();
       pcRef.current = null;
     }
+
     if (localVideoRef.current?.srcObject) {
-      localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      localVideoRef.current.srcObject
+        .getTracks()
+        .forEach((t) => t.stop());
       localVideoRef.current.srcObject = null;
     }
+
     if (remoteVideoRef.current?.srcObject) {
-      remoteVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
       remoteVideoRef.current.srcObject = null;
     }
-    socket.emit("end-call", { otherUserId });
   };
 
   const handleEndClick = () => {
-    endCall();
+    socket.emit("end-call", { receiverId: otherUserId });
+    cleanup();
     navigate(-1);
   };
 

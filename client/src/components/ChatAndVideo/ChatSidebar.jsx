@@ -17,24 +17,29 @@ const ChatSidebar = ({ threads = [], selected, onSelect }) => {
         )}
 
         {Array.isArray(threads) &&
-          threads.map((thread) => {
+          threads.map((thread, index) => {
+            if (!thread || !thread.user) return null;
+
             const user = thread.user;
             const last = thread.lastMessage;
-            const isActive = selected && selected._id === user._id;
+
+            const userId = user._id || index; // fallback safety
+            const isActive =
+              selected && String(selected._id) === String(user._id);
 
             return (
               <button
-                key={user._id}
-                onClick={() => onSelect(user)}
+                key={userId}
+                onClick={() => onSelect && onSelect(user)}
                 className={`w-full text-left px-4 py-3 border-b hover:bg-gray-50 ${
                   isActive ? "bg-gray-100" : ""
                 }`}
               >
                 <div className="font-medium text-sm">
-                  {user.name}
+                  {user.name || "Unknown User"}
                 </div>
 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 truncate">
                   {last?.text
                     ? last.text.slice(0, 40)
                     : "No messages yet"}
