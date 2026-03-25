@@ -28,7 +28,7 @@ const ChatPage = () => {
   // Select user
   // =============================
   const handleSelectUser = async (user) => {
-    if (!user || !user._id) return;
+    if (!user || !user._id || !token) return;
 
     setSelectedUser(user);
 
@@ -40,13 +40,16 @@ const ChatPage = () => {
         }
       );
 
+      if (!res.ok) throw new Error("Failed API");
+
       const data = await res.json();
 
       const msgs = Array.isArray(data) ? data : data?.messages || [];
 
-      setMessages(msgs);
+      setMessages(Array.isArray(msgs) ? msgs : []);
     } catch (err) {
       console.error("Failed to load conversation", err);
+      setMessages([]);
     }
   };
 
@@ -74,19 +77,22 @@ const ChatPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        if (!res.ok) throw new Error("Threads fetch failed");
+
         const data = await res.json();
 
         const threadsArray = Array.isArray(data)
           ? data
           : data?.threads || [];
 
-        setThreads(threadsArray);
+        setThreads(Array.isArray(threadsArray) ? threadsArray : []);
 
         if (threadsArray.length > 0 && !selectedUser) {
-          handleSelectUser(threadsArray[0].user);
+          handleSelectUser(threadsArray[0]?.user);
         }
       } catch (err) {
         console.error("Failed to load threads", err);
+        setThreads([]);
       }
     };
 
@@ -97,7 +103,7 @@ const ChatPage = () => {
   // Socket messages
   // =============================
   useEffect(() => {
-    if (!selectedUser) return;
+    if (!selectedUser || !selectedUser._id) return;
 
     const handleIncoming = (msg) => {
       if (!msg) return;
@@ -116,7 +122,11 @@ const ChatPage = () => {
       setMessages((prev) => {
         if (!Array.isArray(prev)) return [msg];
 
-        if (msg._id && prev.some((m) => String(m._id) === String(msg._id))) {
+        // 🚨 prevent duplicate messages
+        if (
+          msg._id &&
+          prev.some((m) => String(m._id) === String(msg._id))
+        ) {
           return prev;
         }
 
@@ -137,7 +147,7 @@ const ChatPage = () => {
   // Send message
   // =============================
   const handleSendMessage = ({ text }) => {
-    if (!selectedUser || !text?.trim()) return;
+    if (!selectedUser || !selectedUser._id || !text?.trim()) return;
 
     socket.emit("send-message", {
       receiverId: selectedUser._id,
