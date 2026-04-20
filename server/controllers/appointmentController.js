@@ -6,9 +6,7 @@ import { User } from "../models/User.js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-/**
- * CREATE CHECKOUT SESSION
- */
+// Appointment checkout
 export const createCheckoutSession = async (req, res) => {
   try {
     const patientUserId = req.user?.userId;
@@ -36,7 +34,7 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(400).json({ message: "Invalid consultation fee" });
     }
 
-    // ✅ Create appointment safely
+    // Create appointment safely
     const appointment = await Appointment.create({
       doctor: doctorProfile._id,
       doctorUser: doctorProfile.user._id,
@@ -47,7 +45,7 @@ export const createCheckoutSession = async (req, res) => {
       status: "pending",
     });
 
-    // ✅ Stripe session
+    //Stripe session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -80,9 +78,7 @@ export const createCheckoutSession = async (req, res) => {
   }
 };
 
-/**
- * CONFIRM PAYMENT
- */
+// Conform Payment
 export const confirmPayment = async (req, res) => {
   try {
     const { sessionId } = req.body;
@@ -119,9 +115,7 @@ export const confirmPayment = async (req, res) => {
   }
 };
 
-/**
- * GET PATIENT APPOINTMENTS
- */
+// Get patient appointments
 export const getMyAppointments = async (req, res) => {
   try {
     const patientUserId = req.user?.userId;
@@ -142,9 +136,7 @@ export const getMyAppointments = async (req, res) => {
   }
 };
 
-/**
- * GET DOCTOR APPOINTMENTS
- */
+// Get doctors appointments
 export const getDoctorAppointments = async (req, res) => {
   try {
     const doctorUserId = req.user?.userId;
@@ -166,9 +158,7 @@ export const getDoctorAppointments = async (req, res) => {
   }
 };
 
-/**
- * DOCTOR EARNINGS
- */
+// Doctor earnings
 export const getDoctorEarnings = async (req, res) => {
   try {
     const doctorUserId = req.user?.userId;
@@ -210,9 +200,7 @@ export const getDoctorEarnings = async (req, res) => {
   }
 };
 
-/**
- * DOCTOR CONFIRM APPOINTMENT
- */
+// Appointment to be confirmed by the doctor
 export const confirmAppointmentByDoctor = async (req, res) => {
   try {
     const appointmentId = req.params?.id;

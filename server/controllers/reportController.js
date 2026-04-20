@@ -66,7 +66,7 @@ const normalizeCharts = (charts, medicalTermsLength = 0) => {
   return { termsFrequency, categories, severityDots };
 };
 
-// ---------------- TEXT MODE ----------------
+// Report analyze (text format)
 export const analyzeReport = async (req, res) => {
   try {
     const authUser = req.userDoc || req.user;
@@ -136,7 +136,7 @@ export const analyzeReport = async (req, res) => {
   }
 };
 
-// ---------------- FILE MODE ----------------
+//Report analyze (file format)
 export const analyzeReportFile = async (req, res) => {
   try {
     const authUser = req.userDoc || req.user;

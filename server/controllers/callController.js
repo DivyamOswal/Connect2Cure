@@ -1,8 +1,6 @@
 import CallLog from "../models/CallLog.js";
 
-/**
- * CREATE CALL (when user clicks call)
- */
+// Create Call
 export const createCallLog = async (req, res) => {
   try {
     const caller = req.user?.userId;
@@ -26,9 +24,7 @@ export const createCallLog = async (req, res) => {
   }
 };
 
-/**
- * ACCEPT CALL
- */
+// Accept Call
 export const acceptCall = async (req, res) => {
   try {
     const call = await CallLog.findById(req.params.id);
@@ -48,9 +44,7 @@ export const acceptCall = async (req, res) => {
   }
 };
 
-/**
- * REJECT CALL (or MISSED)
- */
+// Reject Call
 export const rejectCall = async (req, res) => {
   try {
     const call = await CallLog.findById(req.params.id);
@@ -70,9 +64,7 @@ export const rejectCall = async (req, res) => {
   }
 };
 
-/**
- * COMPLETE CALL (when ended normally)
- */
+// Complete Call
 export const completeCall = async (req, res) => {
   try {
     const call = await CallLog.findById(req.params.id);
@@ -84,7 +76,7 @@ export const completeCall = async (req, res) => {
     call.status = "completed";
     call.endedAt = new Date();
 
-    // 🔥 Calculate duration
+    // Calculate duration
     if (call.startedAt) {
       call.duration = Math.floor(
         (new Date() - new Date(call.startedAt)) / 1000

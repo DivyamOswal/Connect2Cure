@@ -19,6 +19,8 @@ const ACCESS_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 const REFRESH_TTL_SEC = 7 * 24 * 60 * 60;
 
+
+// Create access and Refresh Token (verfication)
 const makeTokens = (user) => {
   const payload = { userId: user._id.toString(), role: user.role };
   const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_SECRET, {
@@ -80,7 +82,7 @@ export const register = async (req, res) => {
 
 
 
-// LOGIN
+// User login (aslo checks the roles which the user intention)
 export const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -142,7 +144,7 @@ export const refreshTokenHandler = async (req, res) => {
   }
 };
 
-// Logout
+// Logout user
 export const logout = async (req, res) => {
   try {
     const { refreshToken } = req.body;

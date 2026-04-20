@@ -1,9 +1,7 @@
 import Message from "../models/Message.js";
 import Appointment from "../models/Appointment.js";
 
-/**
- * GET /api/messages/threads
- */
+// Message thread (GET)
 export const getThreads = async (req, res) => {
   try {
     const myId = req.user?.userId;

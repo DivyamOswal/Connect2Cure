@@ -41,7 +41,7 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // 💰 CALCULATE PRICING
+    // CALCULATE PRICING
     const basePrice = plan.price;
     const gst = Math.round(basePrice * 0.18);
     const platformFee = Math.round(basePrice * 0.01);
@@ -81,7 +81,7 @@ export const createCheckoutSession = async (req, res) => {
         planId,
         credits: plan.credits.toString(),
 
-        // 🔥 store breakdown
+        // store breakdown
         basePrice: basePrice.toString(),
         gst: gst.toString(),
         platformFee: platformFee.toString(),

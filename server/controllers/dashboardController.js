@@ -9,7 +9,7 @@ const getTodayString = () => {
   return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
 };
 
-// /doctor/summary
+// Doctor Summary
 export const getDoctorSummary = async (req, res) => {
   try {
     // 🔍 Log basic info
@@ -109,7 +109,8 @@ export const getDoctorSummary = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-// /patient/summary
+
+// Patient Summary
 export const getPatientSummary = async (req, res) => {
   try {
     const patientId = req.user.userId;
