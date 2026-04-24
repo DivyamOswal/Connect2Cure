@@ -1,19 +1,24 @@
-// server/models/User.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
-    role: {
-      type: String,
-      enum: ["patient", "doctor", "admin"],
-      default: "patient",
-    },
-     credits: {type: Number,default: 1},
+    name:                { type: String, required: true },
+    email:               { type: String, required: true, unique: true, lowercase: true },
+    password:            { type: String, required: true },
+    role:                { type: String, enum: ["patient", "doctor", "admin"], default: "patient" },
+    credits:             { type: Number, default: 1 },
     onboardingCompleted: { type: Boolean, default: false },
+
+    // Data Retention (DPDP Act 2023 §8 — Data Minimisation)
+    // User account data: retained for 4 years from last activity.
+    // retainUntil is refreshed on every login/activity (update externally).
+    // Inactive accounts auto-expire after 4 years per DPDP Act guidelines.
+    retainUntil: {
+      type: Date,
+      default: () => new Date(Date.now() + 4 * 365.25 * 24 * 60 * 60 * 1000), // 4 years
+      index: { expireAfterSeconds: 0 },
+    },
   },
   { timestamps: true }
 );
