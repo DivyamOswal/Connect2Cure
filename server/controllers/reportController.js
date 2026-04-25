@@ -2,15 +2,10 @@
 import PDFDocument from "pdfkit";
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
+import pdfParse from "pdf-parse";
 import { callGeminiJson } from "../config/geminiRest.js";
 import Report from "../models/Report.js";
 import { User } from "../models/User.js";
-
-/** FIX for pdf-parse in ES modules (Node 18–22) */
-const loadPdfParse = async () => {
-  const mod = await import("pdf-parse");
-  return mod.default || mod;
-};
 
 /**
  * Shared Gemini prompt builder.
@@ -57,7 +52,6 @@ Report text:
  *   categories: [String],
  *   severityDots: [Number]
  * }
- * and align the numeric arrays with medicalTerms length when possible.
  */
 const normalizeCharts = (charts, medicalTermsLength = 0) => {
   const safe = charts && typeof charts === "object" ? charts : {};
@@ -72,20 +66,15 @@ const normalizeCharts = (charts, medicalTermsLength = 0) => {
   let termsFrequency = toArray(safe.termsFrequency).map((n) =>
     Number.isFinite(Number(n)) ? Number(n) : 0
   );
-
   if (medicalTermsLength > 0) {
     termsFrequency = termsFrequency.slice(0, medicalTermsLength);
-    while (termsFrequency.length < medicalTermsLength) {
-      termsFrequency.push(0);
-    }
+    while (termsFrequency.length < medicalTermsLength) termsFrequency.push(0);
   }
 
-  // ---- categories: plain strings (handle possible objects) ----
+  // ---- categories: plain strings ----
   const categories = toArray(safe.categories).map((c) => {
     if (typeof c === "string") return c;
-    if (c && typeof c === "object") {
-      return c.label || c.name || c.category || JSON.stringify(c);
-    }
+    if (c && typeof c === "object") return c.label || c.name || c.category || JSON.stringify(c);
     return String(c);
   });
 
@@ -93,18 +82,17 @@ const normalizeCharts = (charts, medicalTermsLength = 0) => {
   let severityDots = toArray(safe.severityDots).map((n) =>
     Number.isFinite(Number(n)) ? Number(n) : 0
   );
-
   if (medicalTermsLength > 0) {
     severityDots = severityDots.slice(0, medicalTermsLength);
-    while (severityDots.length < medicalTermsLength) {
-      severityDots.push(0);
-    }
+    while (severityDots.length < medicalTermsLength) severityDots.push(0);
   }
 
   return { termsFrequency, categories, severityDots };
 };
 
-// Shared core: deduct credit → call AI → save report
+/**
+ * Shared core: deduct credit → call AI → save report
+ */
 const runAnalysis = async ({ userId, rawText, res }) => {
   // STEP 1: Deduct credit atomically
   const updatedUser = await User.findOneAndUpdate(
@@ -147,8 +135,9 @@ const runAnalysis = async ({ userId, rawText, res }) => {
   });
 };
 
-
+// ─────────────────────────────────────────────
 // POST /api/reports/analyze  (plain text body)
+// ─────────────────────────────────────────────
 export const analyzeReport = async (req, res) => {
   try {
     const authUser = req.userDoc || req.user;
@@ -169,7 +158,9 @@ export const analyzeReport = async (req, res) => {
   }
 };
 
-// POST /api/reports/analyze-file  (multipart file)
+// ─────────────────────────────────────────────
+// POST /api/reports/analyze-file  (multipart)
+// ─────────────────────────────────────────────
 export const analyzeReportFile = async (req, res) => {
   try {
     const authUser = req.userDoc || req.user;
@@ -187,12 +178,15 @@ export const analyzeReportFile = async (req, res) => {
 
     // ---- Extract text based on file type ----
     if (mimetype === "application/pdf") {
-      const pdfParse = await loadPdfParse();
-      const data = await pdfParse(buffer);
-      extractedText = data.text;
+      try {
+        const data = await pdfParse(buffer);
+        extractedText = data.text;
+      } catch (pdfErr) {
+        console.error("❌ PDF parse error:", pdfErr.message);
+        return res.status(422).json({ message: "Failed to parse PDF. Try a different file." });
+      }
     } else if (
-      mimetype ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
       const result = await mammoth.extractRawText({ buffer });
       extractedText = result.value;
@@ -218,23 +212,22 @@ export const analyzeReportFile = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
 // POST /api/reports/:id/share
+// ─────────────────────────────────────────────
 export const createShareLink = async (req, res) => {
   try {
     const { id } = req.params;
-
     if (!id) return res.status(400).json({ message: "Report ID missing" });
 
     const report = await Report.findById(id);
     if (!report) return res.status(404).json({ message: "Report not found" });
 
-    // Using _id as share token (simple & stateless)
     const shareToken = report._id.toString();
 
     return res.json({
       message: "Share link created",
       token: shareToken,
-      // Frontend builds the full URL:  /shared/${shareToken}
     });
   } catch (err) {
     console.error("❌ createShareLink error:", err);
@@ -242,11 +235,12 @@ export const createShareLink = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
 // GET /api/reports/:id/download
+// ─────────────────────────────────────────────
 export const downloadReportPdf = async (req, res) => {
   try {
     const { id } = req.params;
-
     if (!id) return res.status(400).json({ message: "Report id is required" });
 
     const report = await Report.findById(id);
@@ -263,7 +257,6 @@ export const downloadReportPdf = async (req, res) => {
     // ── Header ──
     doc.fontSize(20).text("Medical Report Summary", { underline: true });
     doc.moveDown();
-
     doc.fontSize(12).text(`Report ID: ${report._id}`);
     if (report.createdAt) {
       doc.text(`Created at: ${new Date(report.createdAt).toLocaleString()}`);
@@ -301,9 +294,7 @@ export const downloadReportPdf = async (req, res) => {
 
     // ── Footer ──
     doc.moveDown();
-    doc.fontSize(10).fillColor("gray").text("Generated by Connect2Cure", {
-      align: "center",
-    });
+    doc.fontSize(10).fillColor("gray").text("Generated by Connect2Cure", { align: "center" });
 
     doc.end();
   } catch (err) {
@@ -314,11 +305,12 @@ export const downloadReportPdf = async (req, res) => {
   }
 };
 
-// GET /api/reports/shared/:shareId  (public, no auth)
+// ─────────────────────────────────────────────
+// GET /api/reports/shared/:shareId  (public)
+// ─────────────────────────────────────────────
 export const getSharedReport = async (req, res) => {
   try {
     const { shareId } = req.params;
-
     if (!shareId) {
       return res.status(400).json({ message: "Share token is required" });
     }
