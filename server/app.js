@@ -1,4 +1,3 @@
-// server/app.js
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -37,16 +36,16 @@ app.use((req, res, next) => {
 
 //  2. CORS 
 const allowOrigin = (origin, callback) => {
-  if (!origin) return callback(null, true); // Postman, mobile, server-to-server
+  if (!origin) return callback(null, true); // Postman / mobile / SSR
 
-  const allowed =
+  const isAllowed =
     origin === "https://connect2-cure.vercel.app" ||
-    origin === "http://localhost:5173" ||
-    origin === "http://localhost:3000" ||
-    /^https:\/\/connect2-cure.*\.vercel\.app$/.test(origin) ||       // your preview URLs
-    /^https:\/\/.*\.divyamoswals-projects\.vercel\.app$/.test(origin); // team preview URLs
+    origin === "http://localhost:5173"            ||
+    origin === "http://localhost:3000"            ||
+    /^https:\/\/connect2-cure[^.]*\.vercel\.app$/.test(origin) ||
+    /^https:\/\/[^.]+\.divyamoswals-projects\.vercel\.app$/.test(origin);
 
-  if (allowed) {
+  if (isAllowed) {
     callback(null, true);
   } else {
     console.warn("❌ CORS blocked:", origin);

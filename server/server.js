@@ -8,21 +8,20 @@ import Message from "./models/Message.js";
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
-
 const server = http.createServer(app);
 
-//  CORS origin checker 
+//  Same CORS logic as app.js 
 const allowOrigin = (origin, callback) => {
   if (!origin) return callback(null, true);
 
-  const allowed =
+  const isAllowed =
     origin === "https://connect2-cure.vercel.app" ||
-    origin === "http://localhost:5173" ||
-    origin === "http://localhost:3000" ||
-    /^https:\/\/connect2-cure.*\.vercel\.app$/.test(origin) ||
-    /^https:\/\/.*\.divyamoswals-projects\.vercel\.app$/.test(origin);
+    origin === "http://localhost:5173"            ||
+    origin === "http://localhost:3000"            ||
+    /^https:\/\/connect2-cure[^.]*\.vercel\.app$/.test(origin) ||
+    /^https:\/\/[^.]+\.divyamoswals-projects\.vercel\.app$/.test(origin);
 
-  if (allowed) {
+  if (isAllowed) {
     callback(null, true);
   } else {
     console.warn("❌ Socket CORS blocked:", origin);
@@ -30,7 +29,7 @@ const allowOrigin = (origin, callback) => {
   }
 };
 
-//  Socket.IO 
+// Socket.IO 
 const io = new Server(server, {
   cors: {
     origin: allowOrigin,
@@ -44,6 +43,7 @@ const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
+
   // AUTH
   socket.on("authenticate", (token) => {
     try {
@@ -65,10 +65,7 @@ io.on("connection", (socket) => {
   // CHAT
   socket.on("send-message", async ({ receiverId, text, attachment }) => {
     try {
-      if (!socket.user || !receiverId) {
-        console.log("❌ Invalid message data");
-        return;
-      }
+      if (!socket.user || !receiverId) return;
 
       const saved = await Message.create({
         sender: socket.user.id,
@@ -91,21 +88,16 @@ io.on("connection", (socket) => {
   });
 
   // VIDEO CALL
-  // 1️⃣ INIT CALL
-  socket.on("call-user-init", ({ receiverId }) => {
-    if (!socket.user || !receiverId) {
-      console.log("❌ Invalid call init");
-      return;
-    }
 
+  // 1️⃣ INIT
+  socket.on("call-user-init", ({ receiverId }) => {
+    if (!socket.user || !receiverId) return;
     console.log("📥 CALL INIT to:", receiverId);
     console.log("🟢 Online users:", Array.from(onlineUsers.keys()));
 
     const recSocket = onlineUsers.get(String(receiverId));
     if (recSocket) {
-      io.to(recSocket).emit("incoming-call-notify", {
-        callerId: socket.user.id,
-      });
+      io.to(recSocket).emit("incoming-call-notify", { callerId: socket.user.id });
     } else {
       console.log("❌ Receiver NOT online:", receiverId);
     }
@@ -114,36 +106,23 @@ io.on("connection", (socket) => {
   // 2️⃣ ACCEPT
   socket.on("accept-call", ({ callerId }) => {
     console.log("✅ CALL ACCEPTED by:", socket.user?.id);
-
     const callerSocket = onlineUsers.get(String(callerId));
     if (callerSocket) {
-      io.to(callerSocket).emit("call-accepted", {
-        receiverId: socket.user.id,
-      });
-    } else {
-      console.log("❌ Caller not found:", callerId);
+      io.to(callerSocket).emit("call-accepted", { receiverId: socket.user.id });
     }
   });
 
   // 3️⃣ OFFER
   socket.on("call-user", ({ receiverId, offer }) => {
     console.log("📤 Sending OFFER to:", receiverId);
-
     const recSocket = onlineUsers.get(String(receiverId));
     if (recSocket) {
-      io.to(recSocket).emit("incoming-call", {
-        callerId: socket.user.id,
-        offer,
-      });
-    } else {
-      console.log("❌ OFFER FAILED - receiver not found:", receiverId);
+      io.to(recSocket).emit("incoming-call", { callerId: socket.user.id, offer });
     }
   });
 
   // 4️⃣ ANSWER
   socket.on("call-answer", ({ callerId, answer }) => {
-    console.log("📥 ANSWER received");
-
     const callerSocket = onlineUsers.get(String(callerId));
     if (callerSocket) {
       io.to(callerSocket).emit("call-answer", { answer });
@@ -161,7 +140,6 @@ io.on("connection", (socket) => {
   // 6️⃣ REJECT
   socket.on("reject-call", ({ callerId }) => {
     console.log("❌ CALL REJECTED");
-
     const callerSocket = onlineUsers.get(String(callerId));
     if (callerSocket) {
       io.to(callerSocket).emit("call-rejected");
@@ -171,7 +149,6 @@ io.on("connection", (socket) => {
   // 7️⃣ END
   socket.on("end-call", ({ receiverId }) => {
     console.log("🔴 CALL ENDED");
-
     const recSocket = onlineUsers.get(String(receiverId));
     if (recSocket) {
       io.to(recSocket).emit("call-ended");
@@ -189,7 +166,7 @@ io.on("connection", (socket) => {
   });
 });
 
-//  Start Server 
+// ─── Start Server 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
