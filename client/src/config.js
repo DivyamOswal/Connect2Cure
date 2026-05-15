@@ -5,7 +5,7 @@ const isProd = import.meta.env.PROD;
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (isProd
-    ? "https://connect2cure-backend.onrender.com/api"
+    ? "https://connect2cure.onrender.com/api"
     : "http://localhost:5000/api");
 
 // For images and other static assets served from Express (/uploads)
