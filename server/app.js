@@ -3,6 +3,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
+import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -26,7 +27,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Clean weird %0A in URL if any
+// ── Clean weird %0A in URL 
 app.use((req, res, next) => {
   if (typeof req.url === "string") {
     req.url = req.url.replace(/%0A/gi, "");
@@ -34,72 +35,59 @@ app.use((req, res, next) => {
   next();
 });
 
-// Log request
-app.use((req, res, next) => {
-  console.log("➡", req.method, JSON.stringify(req.url));
-  next();
-});
+// CORS (must be FIRST before any routes) 
+const allowedOrigins = [
+  "https://connect2-cure.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
 
-/**
- * 🔓 VERY PERMISSIVE CORS (HTTP)
- * - Allows ANY origin
- * - Echoes back Origin so credentials can be used
- */
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: Origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+  ],
+};
 
-  if (origin) {
-    res.header("Access-Control-Allow-Origin", origin);
-  } else {
-    res.header("Access-Control-Allow-Origin", "*");
-  }
+app.use(cors(corsOptions));
 
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-  );
+// Handle ALL preflight OPTIONS requests immediately
+app.options("*", cors(corsOptions));
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
-
-app.use(morgan("dev"));
-
-/**
- * ⚠️ Stripe Webhook route with RAW body
- * This MUST come BEFORE express.json() so Stripe signature verification works.
- * In Stripe dashboard, set endpoint as:
- *   https://connect2cure-backend.onrender.com/api/billing/webhook
- */
+//  Stripe Webhook (RAW body — MUST be before express.json()) 
 app.post(
   "/api/billing/webhook",
   express.raw({ type: "application/json" }),
   handleStripeWebhook
 );
 
-// After webhook is defined, parse JSON for all other routes
+//  Body parsers 
 app.use(express.json());
 app.use(cookieParser());
 
-// Connect DB
+//  Logging 
+app.use(morgan("dev"));
+
+//  DB 
 connectDB();
 
-// Serve /uploads/* from server/uploads
-app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "uploads"))
-);
+//  Static uploads 
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-
-// API routes
+//  API Routes 
 app.use("/api/auth", authRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/profile", profileRoutes);
@@ -111,8 +99,15 @@ app.use("/api/calls", callRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/billing", billingRoutes);
 
+//  Health check 
 app.get("/", (req, res) => {
   res.send("Connect2Cure backend running");
+});
+
+//  Global error handler 
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err.message);
+  res.status(err.status || 500).json({ message: err.message || "Internal Server Error" });
 });
 
 export default app;
