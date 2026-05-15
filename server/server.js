@@ -16,6 +16,7 @@ const allowOrigin = (origin, callback) => {
 
   const isAllowed =
     origin === "https://connect2-cure.vercel.app" ||
+    origin === "https://connect2cure.onrender.com" ||
     origin === "http://localhost:5173"            ||
     origin === "http://localhost:3000"            ||
     /^https:\/\/connect2-cure[^.]*\.vercel\.app$/.test(origin) ||
@@ -35,6 +36,7 @@ const io = new Server(server, {
     origin: allowOrigin,
     methods: ["GET", "POST"],
     credentials: true,
+    maxAge: 3600,
   },
   transports: ["websocket", "polling"],
 });
@@ -166,7 +168,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ─── Start Server 
+// Start Server 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

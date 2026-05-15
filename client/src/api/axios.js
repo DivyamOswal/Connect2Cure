@@ -45,7 +45,7 @@ const processQueue = (error, token = null) => {
 
 // Handle 401 -> refresh token flow
 api.interceptors.response.use(
-  (response) => response,
+  // (response) => response,
   async (error) => {
     const originalRequest = error.config;
 

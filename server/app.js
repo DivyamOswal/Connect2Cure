@@ -40,6 +40,7 @@ const allowOrigin = (origin, callback) => {
 
   const isAllowed =
     origin === "https://connect2-cure.vercel.app" ||
+    origin === "https://connect2cure.onrender.com" ||
     origin === "http://localhost:5173"            ||
     origin === "http://localhost:3000"            ||
     /^https:\/\/connect2-cure[^.]*\.vercel\.app$/.test(origin) ||
@@ -64,10 +65,12 @@ const corsOptions = {
     "Accept",
     "Authorization",
   ],
+  maxAge: 3600,
 };
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+app.options("/api/*", cors(corsOptions));
 
 //  3. Stripe Webhook — RAW body, MUST be before express.json() 
 app.post(
