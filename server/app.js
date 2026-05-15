@@ -27,7 +27,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// ── Clean weird %0A in URL 
+//  1. Clean %0A in URLs 
 app.use((req, res, next) => {
   if (typeof req.url === "string") {
     req.url = req.url.replace(/%0A/gi, "");
@@ -35,22 +35,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS (must be FIRST before any routes) 
-const allowedOrigins = [
-  "https://connect2-cure.vercel.app",
-  "http://localhost:5173",
-  "http://localhost:3000",
-];
-
+//  2. CORS (must come before all routes) 
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS: Origin ${origin} not allowed`));
-    }
-  },
+  origin: [
+    "https://connect2-cure.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
@@ -63,31 +54,28 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Handle ALL preflight OPTIONS requests immediately
 app.options("*", cors(corsOptions));
 
-//  Stripe Webhook (RAW body — MUST be before express.json()) 
+//  3. Stripe Webhook  RAW body, MUST be before express.json() 
 app.post(
   "/api/billing/webhook",
   express.raw({ type: "application/json" }),
   handleStripeWebhook
 );
 
-//  Body parsers 
+//  4. Body Parsers 
 app.use(express.json());
 app.use(cookieParser());
 
-//  Logging 
+//  5. Logger 
 app.use(morgan("dev"));
 
-//  DB 
+//  6. Database 
 connectDB();
-
-//  Static uploads 
+//  7. Static Files 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-//  API Routes 
+//  8. API Routes 
 app.use("/api/auth", authRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/profile", profileRoutes);
@@ -99,15 +87,17 @@ app.use("/api/calls", callRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/billing", billingRoutes);
 
-//  Health check 
+//  9. Health Check 
 app.get("/", (req, res) => {
-  res.send("Connect2Cure backend running");
+  res.send("Connect2Cure backend running ✅");
 });
 
-//  Global error handler 
+//  10. Global Error Handler 
 app.use((err, req, res, next) => {
   console.error("❌ Server Error:", err.message);
-  res.status(err.status || 500).json({ message: err.message || "Internal Server Error" });
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+  });
 });
 
 export default app;
