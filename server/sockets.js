@@ -7,32 +7,27 @@ export default function registerSockets(io) {
   io.on("connection", (socket) => {
     console.log("🔌 Socket connected:", socket.id);
 
-    // =========================
+
     // AUTH
-    // =========================
     socket.on("authenticate", (token) => {
       try {
         const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
         socket.user = { id: String(decoded.userId) };
-
         onlineUsers.set(socket.user.id, socket.id);
 
         console.log("🟢 Authenticated:", socket.user.id);
         console.log("🟢 Online users:", Array.from(onlineUsers.keys()));
 
         socket.emit("authenticated");
-
         io.emit("online-users", Array.from(onlineUsers.keys()));
       } catch (err) {
-        console.error("❌ Auth failed");
+        console.error("❌ Auth failed:", err.message);
         socket.disconnect();
       }
     });
 
-    // =========================
     // CHAT
-    // =========================
     socket.on("send-message", async ({ receiverId, text, attachment }) => {
       try {
         if (!socket.user || !receiverId) {
@@ -50,7 +45,6 @@ export default function registerSockets(io) {
         socket.emit("message-sent", saved);
 
         const recSocket = onlineUsers.get(String(receiverId));
-
         if (recSocket) {
           io.to(recSocket).emit("receive-message", saved);
         } else {
@@ -61,31 +55,24 @@ export default function registerSockets(io) {
       }
     });
 
-    // =========================
-    // VIDEO CALL (FIXED)
-    // =========================
-
-    // 1️⃣ CALL INIT
+    // VIDEO CALL
+    // 1️⃣ INIT CALL
     socket.on("call-user-init", ({ receiverId }) => {
-      console.log("📥 CALL INIT:", receiverId);
-
       if (!socket.user || !receiverId) {
         console.log("❌ Invalid call init");
         return;
       }
 
-      const recSocket = onlineUsers.get(String(receiverId));
-
-      // 🔥 ADD THESE TWO LINES
-      console.log("🎯 Receiver socket:", recSocket);
+      console.log("📥 CALL INIT to:", receiverId);
       console.log("🟢 Online users:", Array.from(onlineUsers.keys()));
 
+      const recSocket = onlineUsers.get(String(receiverId));
       if (recSocket) {
         io.to(recSocket).emit("incoming-call-notify", {
           callerId: socket.user.id,
         });
       } else {
-        console.log("❌ Receiver NOT ONLINE or ID mismatch");
+        console.log("❌ Receiver NOT online:", receiverId);
       }
     });
 
@@ -94,11 +81,12 @@ export default function registerSockets(io) {
       console.log("✅ CALL ACCEPTED by:", socket.user?.id);
 
       const callerSocket = onlineUsers.get(String(callerId));
-
       if (callerSocket) {
-        io.to(callerSocket).emit("call-accepted");
+        io.to(callerSocket).emit("call-accepted", {
+          receiverId: socket.user.id,
+        });
       } else {
-        console.log("❌ Caller not found");
+        console.log("❌ Caller not found:", callerId);
       }
     });
 
@@ -107,14 +95,13 @@ export default function registerSockets(io) {
       console.log("📤 Sending OFFER to:", receiverId);
 
       const recSocket = onlineUsers.get(String(receiverId));
-
       if (recSocket) {
         io.to(recSocket).emit("incoming-call", {
           callerId: socket.user.id,
           offer,
         });
       } else {
-        console.log("❌ OFFER FAILED - receiver not found");
+        console.log("❌ OFFER FAILED - receiver not found:", receiverId);
       }
     });
 
@@ -123,7 +110,6 @@ export default function registerSockets(io) {
       console.log("📥 ANSWER received");
 
       const callerSocket = onlineUsers.get(String(callerId));
-
       if (callerSocket) {
         io.to(callerSocket).emit("call-answer", { answer });
       }
@@ -132,7 +118,6 @@ export default function registerSockets(io) {
     // 5️⃣ ICE
     socket.on("ice-candidate", ({ to, candidate }) => {
       const targetSocket = onlineUsers.get(String(to));
-
       if (targetSocket) {
         io.to(targetSocket).emit("ice-candidate", { candidate });
       }
@@ -143,7 +128,6 @@ export default function registerSockets(io) {
       console.log("❌ CALL REJECTED");
 
       const callerSocket = onlineUsers.get(String(callerId));
-
       if (callerSocket) {
         io.to(callerSocket).emit("call-rejected");
       }
@@ -154,23 +138,18 @@ export default function registerSockets(io) {
       console.log("🔴 CALL ENDED");
 
       const recSocket = onlineUsers.get(String(receiverId));
-
       if (recSocket) {
         io.to(recSocket).emit("call-ended");
       }
     });
 
-    // =========================
     // DISCONNECT
-    // =========================
     socket.on("disconnect", () => {
       if (socket.user?.id) {
         onlineUsers.delete(socket.user.id);
+        console.log("🔌 Disconnected:", socket.user.id);
       }
-
-      console.log("🔌 Disconnected:", socket.id);
       console.log("🟢 Online users:", Array.from(onlineUsers.keys()));
-
       io.emit("online-users", Array.from(onlineUsers.keys()));
     });
   });

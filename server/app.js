@@ -35,13 +35,27 @@ app.use((req, res, next) => {
   next();
 });
 
-//  2. CORS (must come before all routes) 
+//  2. CORS 
+const allowOrigin = (origin, callback) => {
+  if (!origin) return callback(null, true); // Postman, mobile, server-to-server
+
+  const allowed =
+    origin === "https://connect2-cure.vercel.app" ||
+    origin === "http://localhost:5173" ||
+    origin === "http://localhost:3000" ||
+    /^https:\/\/connect2-cure.*\.vercel\.app$/.test(origin) ||       // your preview URLs
+    /^https:\/\/.*\.divyamoswals-projects\.vercel\.app$/.test(origin); // team preview URLs
+
+  if (allowed) {
+    callback(null, true);
+  } else {
+    console.warn("❌ CORS blocked:", origin);
+    callback(new Error(`CORS: Origin ${origin} not allowed`));
+  }
+};
+
 const corsOptions = {
-  origin: [
-    "https://connect2-cure.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-  ],
+  origin: allowOrigin,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
@@ -56,7 +70,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-//  3. Stripe Webhook  RAW body, MUST be before express.json() 
+//  3. Stripe Webhook — RAW body, MUST be before express.json() 
 app.post(
   "/api/billing/webhook",
   express.raw({ type: "application/json" }),
@@ -72,6 +86,7 @@ app.use(morgan("dev"));
 
 //  6. Database 
 connectDB();
+
 //  7. Static Files 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 

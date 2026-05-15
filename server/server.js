@@ -1,122 +1,47 @@
 import http from "http";
 import { Server } from "socket.io";
-import jwt from "jsonwebtoken";
 import app from "./app.js";
-import Message from "./models/Message.js";
+import registerSockets from "./socket.js";
+
+dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
 
+//  CORS origin checker 
+const allowOrigin = (origin, callback) => {
+  if (!origin) return callback(null, true);
+
+  const allowed =
+    origin === "https://connect2-cure.vercel.app" ||
+    origin === "http://localhost:5173" ||
+    origin === "http://localhost:3000" ||
+    /^https:\/\/connect2-cure.*\.vercel\.app$/.test(origin) ||
+    /^https:\/\/.*\.divyamoswals-projects\.vercel\.app$/.test(origin);
+
+  if (allowed) {
+    callback(null, true);
+  } else {
+    console.warn("❌ Socket CORS blocked:", origin);
+    callback(new Error("Socket CORS: not allowed"));
+  }
+};
+
+//  Socket.IO 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: allowOrigin,
     methods: ["GET", "POST"],
     credentials: true,
   },
   transports: ["websocket", "polling"],
 });
 
-const onlineUsers = new Map();
+//  Register all socket events from socket.js 
+registerSockets(io);
 
-io.on("connection", (socket) => {
-  console.log("✅ Connected:", socket.id);
-
-  // ================= AUTH =================
-  socket.on("authenticate", (token) => {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-      socket.user = { id: String(decoded.userId) };
-
-      onlineUsers.set(socket.user.id, socket.id);
-
-      socket.emit("authenticated");
-      io.emit("online-users", Array.from(onlineUsers.keys()));
-    } catch (err) {
-      socket.disconnect();
-    }
-  });
-
-  // ================= CHAT =================
-  socket.on("send-message", async ({ receiverId, text }) => {
-    if (!socket.user) return;
-
-    const message = await Message.create({
-      sender: socket.user.id,
-      receiver: receiverId,
-      text,
-    });
-
-    socket.emit("message-sent", message);
-
-    const rec = onlineUsers.get(String(receiverId));
-    if (rec) io.to(rec).emit("receive-message", message);
-  });
-
-  // ================= VIDEO CALL =================
-
-  // 1️⃣ INIT CALL
-  socket.on("call-user-init", ({ receiverId }) => {
-    const rec = onlineUsers.get(String(receiverId));
-    if (rec) {
-      io.to(rec).emit("incoming-call-notify", {
-        callerId: socket.user.id,
-      });
-    }
-  });
-
-  // 2️⃣ ACCEPT CALL
-  socket.on("accept-call", ({ callerId }) => {
-    const callerSocket = onlineUsers.get(String(callerId));
-
-    if (callerSocket) {
-      io.to(callerSocket).emit("call-accepted", {
-        receiverId: socket.user.id, // 🔥 FIX
-      });
-    }
-  });
-
-  // 3️⃣ SEND OFFER
-  socket.on("call-user", ({ receiverId, offer }) => {
-    const rec = onlineUsers.get(String(receiverId));
-
-    if (rec) {
-      io.to(rec).emit("incoming-call", {
-        callerId: socket.user.id,
-        offer,
-      });
-    }
-  });
-
-  // 4️⃣ ANSWER
-  socket.on("call-answer", ({ callerId, answer }) => {
-    const callerSocket = onlineUsers.get(String(callerId));
-
-    if (callerSocket) {
-      io.to(callerSocket).emit("call-answer", { answer });
-    }
-  });
-
-  // 5️⃣ ICE
-  socket.on("ice-candidate", ({ to, candidate }) => {
-    const target = onlineUsers.get(String(to));
-    if (target) {
-      io.to(target).emit("ice-candidate", { candidate });
-    }
-  });
-
-  // 6️⃣ END
-  socket.on("end-call", ({ receiverId }) => {
-    const rec = onlineUsers.get(String(receiverId));
-    if (rec) io.to(rec).emit("call-ended");
-  });
-
-  socket.on("disconnect", () => {
-    if (socket.user?.id) onlineUsers.delete(socket.user.id);
-    io.emit("online-users", Array.from(onlineUsers.keys()));
-  });
-});
-
+//  Start server 
 server.listen(PORT, () => {
-  console.log("🚀 Server running");
+  console.log(`🚀 Server running on port ${PORT}`);
 });
